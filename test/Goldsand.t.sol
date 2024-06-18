@@ -55,7 +55,8 @@ contract GoldsandTest is Test {
 
     address immutable USER = makeAddr("USER");
     address immutable OWNER = msg.sender;
-    uint256 constant STARTING_BALANCE = 256 ether;
+    uint256 constant USER_STARTING_BALANCE = 256 ether;
+    uint256 constant OWNER_STARTING_BALANCE = 0 ether;
 
     DepositData depositData1 = DepositData(
         hex"a62a1f785056741b19997a0009e15f3bd7c49e5957daa7dfee944554475baa5070248515cac5c092d69704267cdc3bcf",
@@ -112,24 +113,30 @@ contract GoldsandTest is Test {
     }
 
     function test_AddAndFund() public {
-        startHoax(USER, STARTING_BALANCE);
+        vm.deal(USER, USER_STARTING_BALANCE);
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData2);
         goldsand.addDepositData(depositData2);
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData3);
         goldsand.addDepositData(depositData3);
 
+        vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 3 ether);
         goldsand.fund{value: 3 ether}();
 
+        vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 67 ether);
         emit IDepositContract.DepositEvent({
@@ -148,6 +155,7 @@ contract GoldsandTest is Test {
         });
         goldsand.fund{value: 67 ether}();
 
+        vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 35 ether);
         emit IDepositContract.DepositEvent({
@@ -161,12 +169,15 @@ contract GoldsandTest is Test {
     }
 
     function test_FundAndAdd() public {
-        startHoax(USER, STARTING_BALANCE);
+        vm.deal(USER, USER_STARTING_BALANCE);
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
+        vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 32 * 3 ether);
         goldsand.fund{value: 32 * 3 ether}();
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         emit IDepositContract.DepositEvent({
@@ -178,6 +189,7 @@ contract GoldsandTest is Test {
         });
         goldsand.addDepositData(depositData1);
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData2);
         emit IDepositContract.DepositEvent({
@@ -189,6 +201,7 @@ contract GoldsandTest is Test {
         });
         goldsand.addDepositData(depositData2);
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData3);
         emit IDepositContract.DepositEvent({
@@ -202,7 +215,8 @@ contract GoldsandTest is Test {
     }
 
     function test_FundAndAddMany() public {
-        startHoax(USER, STARTING_BALANCE);
+        vm.deal(USER, USER_STARTING_BALANCE);
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         DepositData[] memory depositDatas = new DepositData[](4);
         depositDatas[0] = depositData1;
@@ -210,10 +224,12 @@ contract GoldsandTest is Test {
         depositDatas[2] = depositData3;
         depositDatas[3] = depositData4;
 
+        vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 32 * 4 ether);
         goldsand.fund{value: 32 * 4 ether}();
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         emit DepositDataAdded(depositData2);
@@ -251,13 +267,16 @@ contract GoldsandTest is Test {
     }
 
     function test_PartialFund() public {
-        startHoax(USER, STARTING_BALANCE);
+        vm.deal(USER, USER_STARTING_BALANCE);
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
 
         for (uint256 i = 0; i < 64; ++i) {
+            vm.prank(USER);
             vm.expectEmit(true, true, true, true);
             emit Funded(USER, 0.5 ether);
             if (i == 64 - 1) {
@@ -274,7 +293,7 @@ contract GoldsandTest is Test {
     }
 
     function test_InvalidAddDepositData() public {
-        startHoax(USER, STARTING_BALANCE);
+        startHoax(OWNER, OWNER_STARTING_BALANCE);
 
         vm.expectRevert(InvalidPubkeyLength.selector);
         goldsand.addDepositData(depositDataWithInvalidPubkeyLength);
@@ -290,7 +309,7 @@ contract GoldsandTest is Test {
     }
 
     function test_Withdraw() public {
-        startHoax(USER, STARTING_BALANCE);
+        startHoax(USER, USER_STARTING_BALANCE);
 
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 123 ether);
@@ -319,7 +338,7 @@ contract GoldsandTest is Test {
     function testWithdrawalFailed() public {
         RejectEther rejectEther = new RejectEther();
 
-        startHoax(OWNER, STARTING_BALANCE);
+        startHoax(OWNER, OWNER_STARTING_BALANCE);
 
         vm.expectEmit(true, true, true, true);
         emit PausableUpgradeable.Paused(OWNER);
@@ -352,7 +371,7 @@ contract GoldsandTest is Test {
     }
 
     function test_TooSmallDeposit() public {
-        startHoax(USER, STARTING_BALANCE);
+        startHoax(USER, USER_STARTING_BALANCE);
 
         vm.expectRevert(TooSmallDeposit.selector);
         goldsand.fund{value: 0.001 ether}();
@@ -364,7 +383,7 @@ contract GoldsandTest is Test {
         emit MinEthDepositSet(0.05 ether);
         goldsand.setMinEthDeposit(0.05 ether);
 
-        startHoax(USER, STARTING_BALANCE);
+        startHoax(USER, USER_STARTING_BALANCE);
 
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 0.075 ether);
@@ -381,7 +400,7 @@ contract GoldsandTest is Test {
     }
 
     function test_Receive() public {
-        startHoax(USER, STARTING_BALANCE);
+        startHoax(USER, USER_STARTING_BALANCE);
 
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 1 ether);
@@ -390,7 +409,7 @@ contract GoldsandTest is Test {
     }
 
     function test_Fallback() public {
-        startHoax(USER, STARTING_BALANCE);
+        startHoax(USER, USER_STARTING_BALANCE);
 
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 1 ether);
