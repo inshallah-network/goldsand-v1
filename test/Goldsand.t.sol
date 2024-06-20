@@ -24,6 +24,7 @@ import {PausableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/
 import {Test} from "forge-std/Test.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {IERC1967} from "openzeppelin-contracts/contracts/interfaces/IERC1967.sol";
+import {Lib} from "./../src/lib/Lib.sol";
 
 contract RejectEther {
     receive() external payable {
@@ -33,21 +34,6 @@ contract RejectEther {
     function callWithdraw(Goldsand goldsand) external {
         goldsand.withdraw();
     }
-}
-
-// IDepositContract.to_little_endian_64
-function to_little_endian_64(uint64 value) pure returns (bytes memory ret) {
-    ret = new bytes(8);
-    bytes8 bytesValue = bytes8(value);
-    // Byteswapping during copying to bytes.
-    ret[0] = bytesValue[7];
-    ret[1] = bytesValue[6];
-    ret[2] = bytesValue[5];
-    ret[3] = bytesValue[4];
-    ret[4] = bytesValue[3];
-    ret[5] = bytesValue[2];
-    ret[6] = bytesValue[1];
-    ret[7] = bytesValue[0];
 }
 
 contract GoldsandTest is Test {
@@ -142,16 +128,16 @@ contract GoldsandTest is Test {
         emit IDepositContract.DepositEvent({
             pubkey: depositData1.pubkey,
             withdrawal_credentials: depositData1.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData1.signature,
-            index: to_little_endian_64(0)
+            index: Lib.to_little_endian_64(0)
         });
         emit IDepositContract.DepositEvent({
             pubkey: depositData2.pubkey,
             withdrawal_credentials: depositData2.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData2.signature,
-            index: to_little_endian_64(1)
+            index: Lib.to_little_endian_64(1)
         });
         goldsand.fund{value: 67 ether}();
 
@@ -161,9 +147,9 @@ contract GoldsandTest is Test {
         emit IDepositContract.DepositEvent({
             pubkey: depositData3.pubkey,
             withdrawal_credentials: depositData3.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData3.signature,
-            index: to_little_endian_64(2)
+            index: Lib.to_little_endian_64(2)
         });
         goldsand.fund{value: 35 ether}();
     }
@@ -183,9 +169,9 @@ contract GoldsandTest is Test {
         emit IDepositContract.DepositEvent({
             pubkey: depositData1.pubkey,
             withdrawal_credentials: depositData1.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData1.signature,
-            index: to_little_endian_64(0)
+            index: Lib.to_little_endian_64(0)
         });
         goldsand.addDepositData(depositData1);
 
@@ -195,9 +181,9 @@ contract GoldsandTest is Test {
         emit IDepositContract.DepositEvent({
             pubkey: depositData2.pubkey,
             withdrawal_credentials: depositData2.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData2.signature,
-            index: to_little_endian_64(1)
+            index: Lib.to_little_endian_64(1)
         });
         goldsand.addDepositData(depositData2);
 
@@ -207,9 +193,9 @@ contract GoldsandTest is Test {
         emit IDepositContract.DepositEvent({
             pubkey: depositData3.pubkey,
             withdrawal_credentials: depositData3.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData3.signature,
-            index: to_little_endian_64(2)
+            index: Lib.to_little_endian_64(2)
         });
         goldsand.addDepositData(depositData3);
     }
@@ -238,30 +224,30 @@ contract GoldsandTest is Test {
         emit IDepositContract.DepositEvent({
             pubkey: depositData1.pubkey,
             withdrawal_credentials: depositData1.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData1.signature,
-            index: to_little_endian_64(0)
+            index: Lib.to_little_endian_64(0)
         });
         emit IDepositContract.DepositEvent({
             pubkey: depositData2.pubkey,
             withdrawal_credentials: depositData2.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData2.signature,
-            index: to_little_endian_64(1)
+            index: Lib.to_little_endian_64(1)
         });
         emit IDepositContract.DepositEvent({
             pubkey: depositData3.pubkey,
             withdrawal_credentials: depositData3.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData3.signature,
-            index: to_little_endian_64(2)
+            index: Lib.to_little_endian_64(2)
         });
         emit IDepositContract.DepositEvent({
             pubkey: depositData4.pubkey,
             withdrawal_credentials: depositData4.withdrawalCredentials,
-            amount: to_little_endian_64(32 gwei),
+            amount: Lib.to_little_endian_64(32 gwei),
             signature: depositData4.signature,
-            index: to_little_endian_64(3)
+            index: Lib.to_little_endian_64(3)
         });
         goldsand.addDepositDatas(depositDatas);
     }
@@ -283,9 +269,9 @@ contract GoldsandTest is Test {
                 emit IDepositContract.DepositEvent({
                     pubkey: depositData1.pubkey,
                     withdrawal_credentials: depositData1.withdrawalCredentials,
-                    amount: to_little_endian_64(32 gwei),
+                    amount: Lib.to_little_endian_64(32 gwei),
                     signature: depositData1.signature,
-                    index: to_little_endian_64(0)
+                    index: Lib.to_little_endian_64(0)
                 });
             }
             goldsand.fund{value: 0.5 ether}();
