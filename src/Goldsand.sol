@@ -32,6 +32,14 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
     address payable private DEPOSIT_CONTRACT_ADDRESS;
     uint256 private minEthDeposit;
 
+    function getFundersLength() public view returns (uint256) {
+        return funders.length;
+    }
+
+    function getDepositDatasLength() public view returns (uint256) {
+        return depositDatas.length;
+    }
+
     constructor() {
         _disableInitializers();
     }

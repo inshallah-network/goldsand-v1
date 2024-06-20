@@ -402,4 +402,38 @@ contract GoldsandTest is Test {
         (bool fallbackSuccess,) = address(goldsand).call{value: 1 ether}("0x12345678");
         assertTrue(fallbackSuccess);
     }
+
+    function test_KeepStorageAcrossUpgrade() public {
+        vm.deal(USER, USER_STARTING_BALANCE);
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
+
+        assertEq(goldsand.getFundersLength(), 0);
+        assertEq(goldsand.funderToBalance(USER), 0 ether);
+        assertEq(goldsand.getDepositDatasLength(), 0);
+
+        vm.prank(USER);
+        vm.expectEmit(true, true, true, true);
+        emit Funded(USER, 4 ether);
+        goldsand.fund{value: 4 ether}();
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData1);
+        goldsand.addDepositData(depositData1);
+
+        assertEq(goldsand.getFundersLength(), 1);
+        assertEq(goldsand.funderToBalance(USER), 4 ether);
+        assertEq(goldsand.getDepositDatasLength(), 1);
+
+        UpgradeGoldsand upgrade = new UpgradeGoldsand();
+        upgrade.setMostRecentlyDeployedProxy(address(goldsand));
+
+        vm.expectEmit(true, true, true, true);
+        emit Initializable.Initialized(2 ** 64 - 1);
+        upgrade.run();
+
+        assertEq(goldsand.getFundersLength(), 1);
+        assertEq(goldsand.funderToBalance(USER), 4 ether);
+        assertEq(goldsand.getDepositDatasLength(), 1);
+    }
 }
