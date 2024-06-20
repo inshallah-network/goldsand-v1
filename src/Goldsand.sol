@@ -41,29 +41,19 @@ library Lib {
         return node == depositData.depositDataRoot;
     }
 
-    function slice(bytes memory a, uint32 offset, uint32 size) internal pure returns (bytes memory result) {
-        result = new bytes(size);
-        for (uint256 i = 0; i < size; i++) {
-            result[i] = a[offset + i];
-        }
-    }
-
-    function encode_node(DepositData calldata depositData, uint256 amount) internal pure returns (bytes32) {
-        bytes16 zero_bytes16;
-        bytes24 zero_bytes24;
-        bytes32 zero_bytes32;
-        bytes32 pubkey_root = sha256(abi.encodePacked(depositData.pubkey, zero_bytes16));
+    function encode_node(DepositData calldata depositData, uint256 amount) internal pure returns (bytes32 node) {
+        bytes memory encodedAmount = to_little_endian_64(uint64(amount / GWEI));
+        bytes32 pubkey_root = sha256(abi.encodePacked(depositData.pubkey, bytes16(0)));
         bytes32 signature_root = sha256(
             abi.encodePacked(
-                sha256(abi.encodePacked(slice(depositData.signature, 0, 64))),
-                sha256(abi.encodePacked(slice(depositData.signature, 64, 32), zero_bytes32))
+                sha256(abi.encodePacked(depositData.signature[:64])),
+                sha256(abi.encodePacked(depositData.signature[64:], bytes32(0)))
             )
         );
-        bytes memory encodedAmount = to_little_endian_64(uint64(amount / GWEI));
-        return sha256(
+        node = sha256(
             abi.encodePacked(
                 sha256(abi.encodePacked(pubkey_root, depositData.withdrawalCredentials)),
-                sha256(abi.encodePacked(encodedAmount, zero_bytes24, signature_root))
+                sha256(abi.encodePacked(encodedAmount, bytes24(0), signature_root))
             )
         );
     }
