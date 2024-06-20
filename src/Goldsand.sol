@@ -8,39 +8,19 @@ import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/a
 import {PausableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-
-struct DepositData {
-    bytes pubkey;
-    bytes withdrawalCredentials;
-    bytes signature;
-    bytes32 depositDataRoot;
-}
-
-event DepositDataAdded(DepositData depositData);
-
-event Funded(address funder, uint256 amount);
-
-event MinEthDepositSet(uint256 amount);
-
-event Withdrawal(address recipient, uint256 amount);
-
-// DepositContract.deposit(...) emits IDepositContract.DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index);
-
-// pause() emits a Paused event
-
-// unpause() emits an Unpaused event
-
-error WithdrawalFailed(address recipient, uint256 amount);
-
-error TooSmallDeposit();
-
-error InvalidPubkeyLength();
-
-error InvalidWithdrawalCredentialsLength();
-
-error InvalidSignatureLength();
-
-error InvalidDepositDataRoot();
+import {
+    DepositData,
+    DepositDataAdded,
+    Funded,
+    MinEthDepositSet,
+    Withdrawal,
+    WithdrawalFailed,
+    TooSmallDeposit,
+    InvalidPubkeyLength,
+    InvalidWithdrawalCredentialsLength,
+    InvalidSignatureLength,
+    InvalidDepositDataRoot
+} from "./interfaces/IGoldsand.sol";
 
 library Lib {
     /**
