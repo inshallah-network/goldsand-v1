@@ -162,7 +162,7 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
         emit DepositDataAdded(_depositData);
     }
 
-    function addDepositDatas(DepositData[] calldata _depositDatas) public whenNotPaused {
+    function addDepositDatas(DepositData[] calldata _depositDatas) external onlyOwner whenNotPaused {
         for (uint256 i = 0; i < _depositDatas.length; ++i) {
             addDepositData(_depositDatas[i]);
         }
