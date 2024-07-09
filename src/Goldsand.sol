@@ -11,6 +11,7 @@ import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/prox
 import {
     DepositData,
     DepositDataAdded,
+    DuplicateDepositDataDetected,
     Funded,
     MinEthDepositSet,
     Withdrawal,
@@ -40,6 +41,12 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
      * @dev The keys are addresses of funders from the funders array.
      */
     mapping(address funder => uint256 balance) public funderToBalance;
+
+    /**
+     * @notice A mapping to check if we've already added a given deposit data.
+     * @dev The keys are deposit data pubkeys.
+     */
+    mapping(bytes pubkey => bool added) public pubkeyToAdded;
 
     /**
      * @notice Stack of deposit data entries.
@@ -191,7 +198,11 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
         if (!Lib.isValidDepositDataRoot(_depositData)) {
             revert InvalidDepositDataRoot();
         }
+        if (pubkeyToAdded[_depositData.pubkey]) {
+            revert DuplicateDepositDataDetected();
+        }
 
+        pubkeyToAdded[_depositData.pubkey] = true;
         depositDatas.push(_depositData);
         depositFundsIfPossible();
         emit DepositDataAdded(_depositData);

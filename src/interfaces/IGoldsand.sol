@@ -22,6 +22,8 @@ event Withdrawal(address recipient, uint256 amount);
 
 // unpause() emits an Unpaused event
 
+error DuplicateDepositDataDetected();
+
 error WithdrawalFailed(address recipient, uint256 amount);
 
 error TooSmallDeposit();

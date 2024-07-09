@@ -5,6 +5,7 @@ import {console} from "forge-std/console.sol";
 import {
     DepositData,
     DepositDataAdded,
+    DuplicateDepositDataDetected,
     Funded,
     Goldsand,
     InvalidPubkeyLength,
@@ -435,5 +436,67 @@ contract GoldsandTest is Test {
         assertEq(goldsand.getFundersLength(), 1);
         assertEq(goldsand.funderToBalance(USER), 4 ether);
         assertEq(goldsand.getDepositDatasLength(), 1);
+    }
+
+    function test_PreventDoubleDeposit() public {
+        vm.deal(USER, USER_STARTING_BALANCE);
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
+
+        vm.prank(USER);
+        vm.expectEmit(true, true, true, true);
+        emit Funded(USER, 32 * 4 ether);
+        goldsand.fund{value: 32 * 4 ether}();
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData1);
+        goldsand.addDepositData(depositData1);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData1);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData1);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData2);
+        goldsand.addDepositData(depositData2);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData2);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData2);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData3);
+        goldsand.addDepositData(depositData3);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData3);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData3);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData4);
+        goldsand.addDepositData(depositData4);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData4);
+
+        vm.prank(OWNER);
+        vm.expectRevert(DuplicateDepositDataDetected.selector);
+        goldsand.addDepositData(depositData4);
     }
 }
