@@ -11,7 +11,7 @@ import {ERC1967Proxy} from
     "openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract UpgradeGoldsand is Script {
-    address mostRecentlyDeployedProxy = address(0x7251315da4a59d86222eBe99df30d92c10187D93);
+    address mostRecentlyDeployedProxy = address(0x6353322D7E7bdDc436aBE571A46b43FAf796198b);
 
     function setMostRecentlyDeployedProxy(address proxyAddress) public {
         mostRecentlyDeployedProxy = proxyAddress;
