@@ -3,10 +3,6 @@ pragma solidity 0.8.24;
 
 import {Script} from "forge-std/Script.sol";
 import {Goldsand} from "../src/Goldsand.sol";
-import "../src/Goldsand.sol" as ContractA;
-import "../src/Goldsand.sol" as ContractB;
-import "../script/DeployGoldsand.s.sol" as DeployContractB;
-
 import {ERC1967Proxy} from
     "openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -27,7 +23,7 @@ contract UpgradeGoldsand is Script {
 
     function upgradeAddress(address proxyAddress, address newGoldsandImpl) public returns (address) {
         vm.startBroadcast();
-        ContractA.Goldsand proxy = ContractA.Goldsand(payable(proxyAddress));
+        Goldsand proxy = Goldsand(payable(proxyAddress));
         proxy.upgradeToAndCall(address(newGoldsandImpl), "");
         vm.stopBroadcast();
         return address(proxy);
