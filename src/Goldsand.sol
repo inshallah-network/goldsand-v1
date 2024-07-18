@@ -220,6 +220,11 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
         }
     }
 
+    function receiveWithdrawals external payable {
+        // require sender.address = withdrawaul vault address
+        // emit withdrawn event
+    }
+
     /**
      * @notice Emergency function: Withdraw all funds from the contract.
      */

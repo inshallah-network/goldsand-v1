@@ -58,4 +58,7 @@ interface IGoldsand {
     function pause() external;
 
     function unpause() external;
+
+    function receiveWithdrawals() external payable;
+
 }
