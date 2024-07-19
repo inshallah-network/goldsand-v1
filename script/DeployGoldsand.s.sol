@@ -3,10 +3,12 @@ pragma solidity 0.8.24;
 
 import "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
+import {IGoldsand} from "./../src/interfaces/IGoldsand.sol";
 import {Goldsand} from "./../src/Goldsand.sol";
 import {DepositContract} from "./../src/DepositContract.sol";
 import {ERC1967Proxy} from
     "openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {WithdrawalVault} from "./../src/WithdrawalVault.sol";
 
 contract DeployGoldsand is Script {
     address payable constant MAINNET_DEPOSIT_CONTRACT_ADDRESS = payable(0x00000000219ab540356cBB839Cbe05303d7705Fa);
@@ -27,8 +29,12 @@ contract DeployGoldsand is Script {
         } else {
             revert("Unknown network");
         }
-        ERC1967Proxy proxy =
-            new ERC1967Proxy(address(goldsand), abi.encodeCall(Goldsand.initialize, depositContractAddress));
+        WithdrawalVault withdrawalVault = new WithdrawalVault();
+        address payable withdrawalVaultAddress = payable(address(withdrawalVault));
+        ERC1967Proxy proxy = new ERC1967Proxy(
+            address(goldsand), abi.encodeCall(Goldsand.initialize, (depositContractAddress, withdrawalVaultAddress))
+        );
+        withdrawalVault.setGoldsand(IGoldsand(payable(address(proxy))));
 
         vm.stopBroadcast();
         return address(proxy);

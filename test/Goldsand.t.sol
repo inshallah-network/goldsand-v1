@@ -20,6 +20,7 @@ import {
 import {DeployGoldsand} from "./../script/DeployGoldsand.s.sol";
 import {UpgradeGoldsand} from "./../script/UpgradeGoldsand.s.sol";
 import {IDepositContract} from "./../src/interfaces/IDepositContract.sol";
+import {IWithdrawalVault} from "./../src/interfaces/IWithdrawalVault.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {PausableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {Test} from "forge-std/Test.sol";
@@ -345,7 +346,7 @@ contract GoldsandTest is Test {
         Goldsand _goldsand = new Goldsand();
 
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        _goldsand.initialize(payable(address(0)));
+        _goldsand.initialize(payable(address(0)), payable(address(0)));
     }
 
     function test_Upgrade() public {
@@ -498,5 +499,26 @@ contract GoldsandTest is Test {
         vm.prank(OWNER);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData4);
+    }
+
+    function test_CallWithdrawWithdrawals() public {
+        vm.deal(USER, USER_STARTING_BALANCE);
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
+
+        assertNotEq(goldsand.WITHDRAWAL_VAULT_ADDRESS(), address(0));
+
+        vm.prank(USER);
+        (bool withdrawSuccess,) = payable(goldsand.WITHDRAWAL_VAULT_ADDRESS()).call{value: 16 ether}("");
+        assertTrue(withdrawSuccess);
+
+        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 16 ether);
+        assertEq(address(goldsand).balance, 0 ether);
+
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.WithdrawalsReceived(16 ether);
+        goldsand.callWithdrawWithdrawals(16 ether);
+
+        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 0 ether);
+        assertEq(address(goldsand).balance, 16 ether);
     }
 }

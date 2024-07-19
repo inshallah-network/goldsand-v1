@@ -22,6 +22,7 @@ import {
     InvalidSignatureLength,
     InvalidDepositDataRoot
 } from "./interfaces/IGoldsand.sol";
+import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 import {Lib} from "./../src/lib/Lib.sol";
 
 /**
@@ -59,6 +60,11 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
      * @dev This is dependent on the chain we are deployed on.
      */
     address payable private DEPOSIT_CONTRACT_ADDRESS;
+
+    /**
+     * @notice Address of the withdrawal vault contract.
+     */
+    address payable public WITHDRAWAL_VAULT_ADDRESS;
 
     /**
      * @notice Minimum ETH deposit amount.
@@ -100,11 +106,15 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
      * without reinitialization.
      * @param depositContractAddress The address of the deposit contract.
      */
-    function initialize(address payable depositContractAddress) public initializer {
+    function initialize(address payable depositContractAddress, address payable withdrawalVaultAddress)
+        public
+        initializer
+    {
         __Ownable_init(msg.sender);
         __Pausable_init();
         __UUPSUpgradeable_init();
         DEPOSIT_CONTRACT_ADDRESS = depositContractAddress;
+        WITHDRAWAL_VAULT_ADDRESS = withdrawalVaultAddress;
         minEthDeposit = 0.05 ether;
     }
 
@@ -220,9 +230,15 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
         }
     }
 
-    function receiveWithdrawals external payable {
-        // require sender.address = withdrawaul vault address
-        // emit withdrawn event
+    function receiveWithdrawals() external payable {
+        require(msg.sender == WITHDRAWAL_VAULT_ADDRESS);
+        emit IWithdrawalVault.WithdrawalsReceived(msg.value);
+    }
+
+    function callWithdrawWithdrawals(uint256 withdrawalsToWithdraw) public {
+        if (withdrawalsToWithdraw > 0) {
+            IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawWithdrawals(withdrawalsToWithdraw);
+        }
     }
 
     /**

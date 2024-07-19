@@ -10,7 +10,7 @@ import {IGoldsand} from "./interfaces/IGoldsand.sol";
 contract WithdrawalVault {
     using SafeERC20 for IERC20;
 
-    IGoldsand public immutable GOLDSAND;
+    IGoldsand public GOLDSAND;
 
     // Events
     /**
@@ -31,10 +31,9 @@ contract WithdrawalVault {
     error NotEnoughEther(uint256 requested, uint256 balance);
     error ZeroAmount();
 
-    /**
-     * @param _goldsand the main goldsand contract address
-     */
-    constructor(IGoldsand _goldsand) {
+    constructor() {}
+
+    function setGoldsand(IGoldsand _goldsand) external {
         if (address(_goldsand) == address(0)) {
             revert GoldsandZeroAddress();
         }
@@ -109,5 +108,5 @@ contract WithdrawalVault {
     /**
      * @notice Fallback function to receive ETH
      */
-    fallback() external payable {}        
+    fallback() external payable {}
 }
