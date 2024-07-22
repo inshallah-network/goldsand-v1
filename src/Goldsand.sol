@@ -229,12 +229,12 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
         }
     }
 
-    function receiveWithdrawals() external payable {
+    function receiveWithdrawals() external payable whenNotPaused {
         require(msg.sender == WITHDRAWAL_VAULT_ADDRESS);
         emit IWithdrawalVault.WithdrawalsReceived(msg.value);
     }
 
-    function callWithdrawWithdrawals(uint256 withdrawalsToWithdraw) public {
+    function callWithdrawWithdrawals(uint256 withdrawalsToWithdraw) public whenNotPaused {
         if (withdrawalsToWithdraw > 0) {
             IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawWithdrawals(withdrawalsToWithdraw);
         }
