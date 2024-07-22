@@ -3,33 +3,14 @@ pragma solidity 0.8.24;
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
+import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 
-contract WithdrawalVault {
+contract WithdrawalVault is IWithdrawalVault {
     using SafeERC20 for IERC20;
 
     IGoldsand public GOLDSAND;
-
-    // Events
-    /**
-     * Emitted when the ERC20 `token` recovered (i.e. transferred)
-     * to the Goldsand treasury address by `requestedBy` sender.
-     */
-    event ERC20Recovered(address indexed requestedBy, address indexed token, uint256 amount);
-
-    /**
-     * Emitted when the ERC721-compatible `token` (NFT) recovered (i.e. transferred)
-     * to the Goldsand treasury address by `requestedBy` sender.
-     */
-    event ERC721Recovered(address indexed requestedBy, address indexed token, uint256 tokenId);
-
-    // Errors
-    error GoldsandZeroAddress();
-    error NotGoldsand();
-    error NotEnoughEther(uint256 requested, uint256 balance);
-    error ZeroAmount();
 
     constructor() {}
 
