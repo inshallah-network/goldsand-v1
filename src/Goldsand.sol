@@ -21,6 +21,7 @@ import {
     InvalidSignatureLength,
     InvalidDepositDataRoot
 } from "./interfaces/IGoldsand.sol";
+import {IGoldsand} from "./interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 import {Lib} from "./../src/lib/Lib.sol";
 
@@ -29,7 +30,7 @@ import {Lib} from "./../src/lib/Lib.sol";
  * @author Asjad Syed
  * @notice Sharia-compliant Ethereum staking for 2B+ Muslims around the world
  */
-contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     /**
      * @notice Array of funder addresses.
      * @dev Used to index into funderToBalance.
@@ -229,15 +230,15 @@ contract Goldsand is Initializable, OwnableUpgradeable, PausableUpgradeable, UUP
         }
     }
 
-    function receiveWithdrawals() external payable whenNotPaused {
-        require(msg.sender == WITHDRAWAL_VAULT_ADDRESS);
-        emit IWithdrawalVault.WithdrawalsReceived(msg.value);
-    }
-
     function callWithdrawWithdrawals(uint256 withdrawalsToWithdraw) public whenNotPaused {
         if (withdrawalsToWithdraw > 0) {
             IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawWithdrawals(withdrawalsToWithdraw);
         }
+    }
+
+    function receiveWithdrawals() external payable whenNotPaused {
+        require(msg.sender == WITHDRAWAL_VAULT_ADDRESS);
+        emit IWithdrawalVault.WithdrawalsReceived(msg.value);
     }
 
     /**

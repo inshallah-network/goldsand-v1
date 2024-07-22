@@ -37,7 +37,11 @@ error InvalidSignatureLength();
 error InvalidDepositDataRoot();
 
 interface IGoldsand {
-    function initialize(address payable depositContractAddress) external;
+    function getFundersLength() external view returns (uint256);
+
+    function getDepositDatasLength() external view returns (uint256);
+
+    function initialize(address payable depositContractAddress, address payable withdrawalVaultAddress) external;
 
     fallback() external payable;
 
@@ -47,17 +51,17 @@ interface IGoldsand {
 
     function fund() external payable;
 
-    function depositFundsIfPossible() external;
-
     function addDepositData(DepositData calldata _depositData) external;
 
     function addDepositDatas(DepositData[] calldata _depositDatas) external;
+
+    function callWithdrawWithdrawals(uint256 withdrawalsToWithdraw) external;
+
+    function receiveWithdrawals() external payable;
 
     function withdraw() external;
 
     function pause() external;
 
     function unpause() external;
-
-    function receiveWithdrawals() external payable;
 }
