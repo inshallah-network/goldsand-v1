@@ -2,7 +2,6 @@
 pragma solidity 0.8.24;
 
 import "forge-std/Script.sol";
-import {console} from "forge-std/console.sol";
 import {IGoldsand} from "./../src/interfaces/IGoldsand.sol";
 import {Goldsand} from "./../src/Goldsand.sol";
 import {DepositContract} from "./../src/DepositContract.sol";

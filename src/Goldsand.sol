@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {console} from "forge-std/console.sol";
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
 import {DepositContract} from "./DepositContract.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
