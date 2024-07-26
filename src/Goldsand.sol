@@ -15,6 +15,8 @@ import {
     MinEthDepositSet,
     Withdrawal,
     WithdrawalFailed,
+    WithdrawalVaultZeroAddress,
+    WithdrawalVaultSet,
     TooSmallDeposit,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
@@ -24,6 +26,8 @@ import {
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 import {Lib} from "./../src/lib/Lib.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 
 /**
  * @title Goldsand
@@ -106,15 +110,11 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * without reinitialization.
      * @param depositContractAddress The address of the deposit contract.
      */
-    function initialize(address payable depositContractAddress, address payable withdrawalVaultAddress)
-        public
-        initializer
-    {
+    function initialize(address payable depositContractAddress) public initializer {
         __Ownable_init(msg.sender);
         __Pausable_init();
         __UUPSUpgradeable_init();
         DEPOSIT_CONTRACT_ADDRESS = depositContractAddress;
-        WITHDRAWAL_VAULT_ADDRESS = withdrawalVaultAddress;
         minEthDeposit = 0.05 ether;
     }
 
@@ -132,6 +132,15 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      */
     receive() external payable whenNotPaused {
         fund();
+    }
+
+    function setWithdrawalVaultAddress(address payable withdrawalVaultAddress) external onlyOwner {
+        if (withdrawalVaultAddress == address(0)) {
+            revert WithdrawalVaultZeroAddress();
+        }
+
+        WITHDRAWAL_VAULT_ADDRESS = withdrawalVaultAddress;
+        emit WithdrawalVaultSet(IWithdrawalVault(withdrawalVaultAddress));
     }
 
     /**
@@ -230,13 +239,19 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
         }
     }
 
-    function callWithdrawWithdrawals(uint256 withdrawalsToWithdraw) public whenNotPaused {
-        if (withdrawalsToWithdraw > 0) {
-            IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawWithdrawals(withdrawalsToWithdraw);
-        }
+    function callWithdrawETH(uint256 withdrawalsToWithdraw) external onlyOwner {
+        IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawETH(withdrawalsToWithdraw);
     }
 
-    function receiveWithdrawals() external payable whenNotPaused {
+    function callRecoverERC20(IERC20 _token, uint256 _amount) external onlyOwner {
+        IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC20(_token, _amount);
+    }
+
+    function callRecoverERC721(IERC721 _token, uint256 _tokenId) external onlyOwner {
+        IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC721(_token, _tokenId);
+    }
+
+    function receiveETH() external payable whenNotPaused {
         require(msg.sender == WITHDRAWAL_VAULT_ADDRESS);
         emit IWithdrawalVault.WithdrawalsReceived(msg.value);
     }

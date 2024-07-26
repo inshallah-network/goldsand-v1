@@ -3,9 +3,12 @@ pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
+import {IGoldsand} from "./IGoldsand.sol";
 
 interface IWithdrawalVault {
     // Events
+
+    event GoldsandSet(IGoldsand goldsand);
 
     event WithdrawalsReceived(uint256 amount);
 
@@ -23,7 +26,6 @@ interface IWithdrawalVault {
 
     // Errors
     error GoldsandZeroAddress();
-    error NotGoldsand();
     error NotEnoughEther(uint256 requested, uint256 balance);
     error ZeroAmount();
 
@@ -32,7 +34,7 @@ interface IWithdrawalVault {
      * @dev Can be called only by the Goldsand contract
      * @param _amount amount of ETH to withdraw
      */
-    function withdrawWithdrawals(uint256 _amount) external;
+    function withdrawETH(uint256 _amount) external;
 
     /**
      * Transfers a given `_amount` of an ERC20-token (defined by the `_token` contract address)

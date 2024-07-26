@@ -28,12 +28,12 @@ contract DeployGoldsand is Script {
         } else {
             revert("Unknown network");
         }
-        WithdrawalVault withdrawalVault = new WithdrawalVault();
+        ERC1967Proxy proxy =
+            new ERC1967Proxy(address(goldsand), abi.encodeCall(Goldsand.initialize, (depositContractAddress)));
+        WithdrawalVault withdrawalVault = new WithdrawalVault(tx.origin, IGoldsand(payable(address(proxy))));
         address payable withdrawalVaultAddress = payable(address(withdrawalVault));
-        ERC1967Proxy proxy = new ERC1967Proxy(
-            address(goldsand), abi.encodeCall(Goldsand.initialize, (depositContractAddress, withdrawalVaultAddress))
-        );
-        withdrawalVault.setGoldsand(IGoldsand(payable(address(proxy))));
+        IGoldsand(payable(address(proxy))).setWithdrawalVaultAddress(withdrawalVaultAddress);
+        withdrawalVault.transferOwnership(address(proxy));
 
         vm.stopBroadcast();
         return address(proxy);

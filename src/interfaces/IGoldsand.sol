@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
+import {IWithdrawalVault} from "./IWithdrawalVault.sol";
+
 struct DepositData {
     bytes pubkey;
     bytes withdrawalCredentials;
@@ -16,6 +18,8 @@ event MinEthDepositSet(uint256 amount);
 
 event Withdrawal(address recipient, uint256 amount);
 
+event WithdrawalVaultSet(IWithdrawalVault withdrawalVault);
+
 // DepositContract.deposit(...) emits IDepositContract.DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index);
 
 // pause() emits a Paused event
@@ -25,6 +29,8 @@ event Withdrawal(address recipient, uint256 amount);
 error DuplicateDepositDataDetected();
 
 error WithdrawalFailed(address recipient, uint256 amount);
+
+error WithdrawalVaultZeroAddress();
 
 error TooSmallDeposit();
 
@@ -41,11 +47,13 @@ interface IGoldsand {
 
     function getDepositDatasLength() external view returns (uint256);
 
-    function initialize(address payable depositContractAddress, address payable withdrawalVaultAddress) external;
+    function initialize(address payable depositContractAddress) external;
 
     fallback() external payable;
 
     receive() external payable;
+
+    function setWithdrawalVaultAddress(address payable withdrawalVaultAddress) external;
 
     function setMinEthDeposit(uint256 _minEthDeposit) external;
 
@@ -55,9 +63,9 @@ interface IGoldsand {
 
     function addDepositDatas(DepositData[] calldata _depositDatas) external;
 
-    function callWithdrawWithdrawals(uint256 withdrawalsToWithdraw) external;
+    function callWithdrawETH(uint256 withdrawalsToWithdraw) external;
 
-    function receiveWithdrawals() external payable;
+    function receiveETH() external payable;
 
     function withdraw() external;
 
