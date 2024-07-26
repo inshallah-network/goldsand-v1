@@ -134,6 +134,10 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
         fund();
     }
 
+    /**
+     * @notice Sets the address of the withdrawal vault contract.
+     * @param withdrawalVaultAddress The address of the withdrawal vault contract.
+     */
     function setWithdrawalVaultAddress(address payable withdrawalVaultAddress) external onlyOwner {
         if (withdrawalVaultAddress == address(0)) {
             revert WithdrawalVaultZeroAddress();
@@ -239,18 +243,36 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
         }
     }
 
+    /**
+     * @notice Calls the withdrawal vault to withdraw ETH.
+     * @dev The withdrawal vault sends the ETH back with receiveETH()
+     * @param withdrawalsToWithdraw The amount of ETH to withdraw.
+     */
     function callWithdrawETH(uint256 withdrawalsToWithdraw) external onlyOwner {
         IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawETH(withdrawalsToWithdraw);
     }
 
+    /**
+     * @notice Calls the withdrawal vault to recover ERC20 tokens.
+     * @param _token The ERC20 token to recover.
+     * @param _amount The amount of the ERC20 token to recover.
+     */
     function callRecoverERC20(IERC20 _token, uint256 _amount) external onlyOwner {
         IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC20(_token, _amount);
     }
 
+    /**
+     * @notice Calls the withdrawal vault to recover ERC721 tokens.
+     * @param _token The ERC721 token to recover.
+     * @param _tokenId The ID of the ERC721 token to recover.
+     */
     function callRecoverERC721(IERC721 _token, uint256 _tokenId) external onlyOwner {
         IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC721(_token, _tokenId);
     }
 
+    /**
+     * @notice Receives ETH from the withdrawal vault.
+     */
     function receiveETH() external payable whenNotPaused {
         require(msg.sender == WITHDRAWAL_VAULT_ADDRESS);
         emit IWithdrawalVault.WithdrawalsReceived(msg.value);
