@@ -10,18 +10,18 @@ import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/prox
 import {
     DepositData,
     DepositDataAdded,
-    DuplicateDepositDataDetected,
+    EmergencyWithdrawal,
     Funded,
     MinEthDepositSet,
-    Withdrawal,
-    WithdrawalFailed,
-    WithdrawalVaultZeroAddress,
     WithdrawalVaultSet,
-    TooSmallDeposit,
+    DuplicateDepositDataDetected,
+    EmergencyWithdrawalFailed,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
     InvalidSignatureLength,
-    InvalidDepositDataRoot
+    InvalidDepositDataRoot,
+    TooSmallDeposit,
+    WithdrawalVaultZeroAddress
 } from "./interfaces/IGoldsand.sol";
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
@@ -259,13 +259,13 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
     /**
      * @notice Emergency function: Withdraw all funds from the contract.
      */
-    function withdraw() external onlyOwner whenPaused {
+    function emergencyWithdraw() external onlyOwner whenPaused {
         uint256 balance = address(this).balance;
-        (bool withdrawSuccess,) = payable(msg.sender).call{value: balance}("");
-        if (!withdrawSuccess) {
-            revert WithdrawalFailed(msg.sender, balance);
+        (bool emergencyWithdrawSuccess,) = payable(msg.sender).call{value: balance}("");
+        if (!emergencyWithdrawSuccess) {
+            revert EmergencyWithdrawalFailed(msg.sender, balance);
         }
-        emit Withdrawal(msg.sender, balance);
+        emit EmergencyWithdrawal(msg.sender, balance);
     }
 
     /**

@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
+import {Goldsand} from "./../src/Goldsand.sol";
 import {
     DepositData,
     DepositDataAdded,
-    DuplicateDepositDataDetected,
+    EmergencyWithdrawal,
     Funded,
-    Goldsand,
+    MinEthDepositSet,
+    WithdrawalVaultSet,
+    DuplicateDepositDataDetected,
+    EmergencyWithdrawalFailed,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
     InvalidSignatureLength,
     InvalidDepositDataRoot,
-    MinEthDepositSet,
     TooSmallDeposit,
-    Withdrawal,
-    WithdrawalFailed,
-    WithdrawalVaultSet,
     WithdrawalVaultZeroAddress
-} from "./../src/Goldsand.sol";
-import {WithdrawalVault} from "./../src/WithdrawalVault.sol";
+} from "./../src/interfaces/IGoldsand.sol";
 import {IGoldsand} from "./../src/interfaces/IGoldsand.sol";
+import {WithdrawalVault} from "./../src/WithdrawalVault.sol";
 import {DeployGoldsand} from "./../script/DeployGoldsand.s.sol";
 import {UpgradeGoldsand} from "./../script/UpgradeGoldsand.s.sol";
 import {IDepositContract} from "./../src/interfaces/IDepositContract.sol";
@@ -64,8 +64,8 @@ contract RejectEther {
         revert("Rejected Ether");
     }
 
-    function callWithdraw(Goldsand goldsand) external {
-        goldsand.withdraw();
+    function callEmergencyWithdraw(Goldsand goldsand) external {
+        goldsand.emergencyWithdraw();
     }
 }
 
@@ -336,7 +336,7 @@ contract GoldsandTest is Test {
         goldsand.addDepositData(depositDataWithInvalidDataRoot);
     }
 
-    function test_Withdraw() public {
+    function test_EmergencyWithdraw() public {
         vm.deal(USER, USER_STARTING_BALANCE);
         vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
@@ -352,13 +352,13 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit Withdrawal(OWNER, 123 ether);
-        goldsand.withdraw();
+        emit EmergencyWithdrawal(OWNER, 123 ether);
+        goldsand.emergencyWithdraw();
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit Withdrawal(OWNER, 0);
-        goldsand.withdraw();
+        emit EmergencyWithdrawal(OWNER, 0);
+        goldsand.emergencyWithdraw();
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
@@ -366,7 +366,7 @@ contract GoldsandTest is Test {
         goldsand.unpause();
     }
 
-    function testWithdrawalFailed() public {
+    function testEmergencyWithdrawalFailed() public {
         vm.deal(USER, USER_STARTING_BALANCE);
         vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
@@ -382,8 +382,8 @@ contract GoldsandTest is Test {
         emit OwnableUpgradeable.OwnershipTransferred(OWNER, address(rejectEther));
         goldsand.transferOwnership(address(rejectEther));
 
-        vm.expectRevert(abi.encodeWithSelector(WithdrawalFailed.selector, address(rejectEther), 0 ether));
-        rejectEther.callWithdraw(goldsand);
+        vm.expectRevert(abi.encodeWithSelector(EmergencyWithdrawalFailed.selector, address(rejectEther), 0 ether));
+        rejectEther.callEmergencyWithdraw(goldsand);
     }
 
     function test_Constructor() public {

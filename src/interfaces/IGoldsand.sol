@@ -12,11 +12,11 @@ struct DepositData {
 
 event DepositDataAdded(DepositData depositData);
 
+event EmergencyWithdrawal(address recipient, uint256 amount);
+
 event Funded(address funder, uint256 amount);
 
 event MinEthDepositSet(uint256 amount);
-
-event Withdrawal(address recipient, uint256 amount);
 
 event WithdrawalVaultSet(IWithdrawalVault withdrawalVault);
 
@@ -28,11 +28,7 @@ event WithdrawalVaultSet(IWithdrawalVault withdrawalVault);
 
 error DuplicateDepositDataDetected();
 
-error WithdrawalFailed(address recipient, uint256 amount);
-
-error WithdrawalVaultZeroAddress();
-
-error TooSmallDeposit();
+error EmergencyWithdrawalFailed(address recipient, uint256 amount);
 
 error InvalidPubkeyLength();
 
@@ -41,6 +37,10 @@ error InvalidWithdrawalCredentialsLength();
 error InvalidSignatureLength();
 
 error InvalidDepositDataRoot();
+
+error TooSmallDeposit();
+
+error WithdrawalVaultZeroAddress();
 
 interface IGoldsand {
     function getFundersLength() external view returns (uint256);
@@ -67,7 +67,7 @@ interface IGoldsand {
 
     function receiveETH() external payable;
 
-    function withdraw() external;
+    function emergencyWithdraw() external;
 
     function pause() external;
 
