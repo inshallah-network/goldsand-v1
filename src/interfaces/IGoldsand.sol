@@ -42,6 +42,14 @@ error TooSmallDeposit();
 
 error WithdrawalVaultZeroAddress();
 
+bytes32 constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE"); // 0xbf233dd2aafeb4d50879c4aa5c81e96d92f6e6945c906a58f9f2d1c1631b4b26
+
+bytes32 constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE"); // 0x71840dc4906352362b0cdaf79870196c8e42acafade72d5d5a6d59291253ceb1
+
+bytes32 constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE"); // 0x97667070c54ef182b0f5858b034beac1b6f3089aa2d3188bb1e8929f4fa9b929
+
+bytes32 constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE"); // 0x189ab7a9244df0848122154315af71fe140f3db0fe014031783b0946b8c9d2e3
+
 interface IGoldsand {
     function getFundersLength() external view returns (uint256);
 

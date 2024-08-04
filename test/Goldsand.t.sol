@@ -16,7 +16,11 @@ import {
     InvalidSignatureLength,
     InvalidDepositDataRoot,
     TooSmallDeposit,
-    WithdrawalVaultZeroAddress
+    WithdrawalVaultZeroAddress,
+    EMERGENCY_ROLE,
+    GOVERNANCE_ROLE,
+    OPERATOR_ROLE,
+    UPGRADER_ROLE
 } from "./../src/interfaces/IGoldsand.sol";
 import {IGoldsand} from "./../src/interfaces/IGoldsand.sol";
 import {WithdrawalVault} from "./../src/WithdrawalVault.sol";
@@ -76,8 +80,11 @@ contract GoldsandTest is Test {
 
     address immutable USER = makeAddr("USER");
     address immutable OWNER = msg.sender;
+    address immutable EMERGENCY = makeAddr("EMERGENCY");
+    address immutable GOVERNANCE = makeAddr("GOVERNANCE");
+    address immutable OPERATOR = makeAddr("OPERATOR");
+    address immutable UPGRADER = makeAddr("UPGRADER");
     uint256 constant USER_STARTING_BALANCE = 256 ether;
-    uint256 constant OWNER_STARTING_BALANCE = 0 ether;
 
     DepositData depositData1 = DepositData(
         hex"a62a1f785056741b19997a0009e15f3bd7c49e5957daa7dfee944554475baa5070248515cac5c092d69704267cdc3bcf",
@@ -131,25 +138,34 @@ contract GoldsandTest is Test {
     function setUp() public {
         DeployGoldsand deploy = new DeployGoldsand();
         goldsand = deploy.run();
+
+        vm.prank(msg.sender);
+        goldsand.grantRole(EMERGENCY_ROLE, EMERGENCY);
+        vm.prank(msg.sender);
+        goldsand.grantRole(GOVERNANCE_ROLE, GOVERNANCE);
+        vm.prank(msg.sender);
+        goldsand.grantRole(OPERATOR_ROLE, OPERATOR);
+        vm.prank(msg.sender);
+        goldsand.grantRole(UPGRADER_ROLE, UPGRADER);
+
         myERC20 = new MyERC20();
         myERC721 = new MyERC721("Test", "TEST");
     }
 
     function test_AddAndFund() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData2);
         goldsand.addDepositData(depositData2);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData3);
         goldsand.addDepositData(depositData3);
@@ -193,14 +209,13 @@ contract GoldsandTest is Test {
 
     function test_FundAndAdd() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 32 * 3 ether);
         goldsand.fund{value: 32 * 3 ether}();
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         emit IDepositContract.DepositEvent({
@@ -212,7 +227,7 @@ contract GoldsandTest is Test {
         });
         goldsand.addDepositData(depositData1);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData2);
         emit IDepositContract.DepositEvent({
@@ -224,7 +239,7 @@ contract GoldsandTest is Test {
         });
         goldsand.addDepositData(depositData2);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData3);
         emit IDepositContract.DepositEvent({
@@ -239,7 +254,6 @@ contract GoldsandTest is Test {
 
     function test_FundAndAddMany() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         DepositData[] memory depositDatas = new DepositData[](4);
         depositDatas[0] = depositData1;
@@ -252,7 +266,7 @@ contract GoldsandTest is Test {
         emit Funded(USER, 32 * 4 ether);
         goldsand.fund{value: 32 * 4 ether}();
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         emit DepositDataAdded(depositData2);
@@ -291,9 +305,8 @@ contract GoldsandTest is Test {
 
     function test_PartialFund() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
@@ -317,73 +330,73 @@ contract GoldsandTest is Test {
 
     function test_InvalidAddDepositData() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(InvalidPubkeyLength.selector);
         goldsand.addDepositData(depositDataWithInvalidPubkeyLength);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(InvalidWithdrawalCredentialsLength.selector);
         goldsand.addDepositData(depositDataWithInvalidWithdrawalCredentialsLength);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(InvalidSignatureLength.selector);
         goldsand.addDepositData(depositDataWithInvalidSignatureLength);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(InvalidDepositDataRoot.selector);
         goldsand.addDepositData(depositDataWithInvalidDataRoot);
     }
 
     function test_EmergencyWithdraw() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 123 ether);
         goldsand.fund{value: 123 ether}();
 
-        vm.prank(OWNER);
+        vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
-        emit PausableUpgradeable.Paused(OWNER);
+        emit PausableUpgradeable.Paused(EMERGENCY);
         goldsand.pause();
 
-        vm.prank(OWNER);
+        vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
-        emit EmergencyWithdrawal(OWNER, 123 ether);
+        emit EmergencyWithdrawal(EMERGENCY, 123 ether);
         goldsand.emergencyWithdraw();
 
-        vm.prank(OWNER);
+        vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
-        emit EmergencyWithdrawal(OWNER, 0);
+        emit EmergencyWithdrawal(EMERGENCY, 0);
         goldsand.emergencyWithdraw();
 
-        vm.prank(OWNER);
+        vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
-        emit PausableUpgradeable.Unpaused(OWNER);
+        emit PausableUpgradeable.Unpaused(EMERGENCY);
         goldsand.unpause();
     }
 
-    function testEmergencyWithdrawalFailed() public {
+    function test_EmergencyWithdrawalFailed() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         RejectEther rejectEther = new RejectEther();
 
-        vm.prank(OWNER);
+        vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
-        emit PausableUpgradeable.Paused(OWNER);
+        emit PausableUpgradeable.Paused(EMERGENCY);
         goldsand.pause();
 
-        vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true);
-        emit OwnableUpgradeable.OwnershipTransferred(OWNER, address(rejectEther));
-        goldsand.transferOwnership(address(rejectEther));
+        vm.prank(msg.sender);
+        goldsand.grantRole(EMERGENCY_ROLE, address(rejectEther));
 
         vm.expectRevert(abi.encodeWithSelector(EmergencyWithdrawalFailed.selector, address(rejectEther), 0 ether));
         rejectEther.callEmergencyWithdraw(goldsand);
+
+        vm.prank(EMERGENCY);
+        vm.expectEmit(true, true, true, true);
+        emit PausableUpgradeable.Unpaused(EMERGENCY);
+        goldsand.unpause();
     }
 
     function test_Constructor() public {
@@ -397,7 +410,7 @@ contract GoldsandTest is Test {
 
     function test_Upgrade() public {
         UpgradeGoldsand upgrade = new UpgradeGoldsand();
-        upgrade.setMostRecentlyDeployedProxy(address(goldsand));
+        upgrade.setMostRecentlyDeployedProxy(payable(address(goldsand)));
 
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(2 ** 64 - 1);
@@ -406,7 +419,6 @@ contract GoldsandTest is Test {
 
     function test_TooSmallDeposit() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         vm.expectRevert(TooSmallDeposit.selector);
@@ -415,9 +427,8 @@ contract GoldsandTest is Test {
 
     function test_SetMinEthDeposit() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
-        vm.prank(OWNER);
+        vm.prank(GOVERNANCE);
         vm.expectEmit(true, true, true, true);
         emit MinEthDepositSet(0.05 ether);
         goldsand.setMinEthDeposit(0.05 ether);
@@ -427,7 +438,7 @@ contract GoldsandTest is Test {
         emit Funded(USER, 0.075 ether);
         goldsand.fund{value: 0.075 ether}();
 
-        vm.prank(OWNER);
+        vm.prank(GOVERNANCE);
         vm.expectEmit(true, true, true, true);
         emit MinEthDepositSet(0.1 ether);
         goldsand.setMinEthDeposit(0.1 ether);
@@ -439,7 +450,6 @@ contract GoldsandTest is Test {
 
     function test_Receive() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         vm.expectEmit(true, true, true, true);
@@ -450,7 +460,6 @@ contract GoldsandTest is Test {
 
     function test_Fallback() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         vm.expectEmit(true, true, true, true);
@@ -461,7 +470,6 @@ contract GoldsandTest is Test {
 
     function test_KeepStorageAcrossUpgrade() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         assertEq(goldsand.getFundersLength(), 0);
         assertEq(goldsand.funderToBalance(USER), 0 ether);
@@ -472,7 +480,7 @@ contract GoldsandTest is Test {
         emit Funded(USER, 4 ether);
         goldsand.fund{value: 4 ether}();
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
@@ -482,7 +490,7 @@ contract GoldsandTest is Test {
         assertEq(goldsand.getDepositDatasLength(), 1);
 
         UpgradeGoldsand upgrade = new UpgradeGoldsand();
-        upgrade.setMostRecentlyDeployedProxy(address(goldsand));
+        upgrade.setMostRecentlyDeployedProxy(payable(address(goldsand)));
 
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(2 ** 64 - 1);
@@ -495,76 +503,74 @@ contract GoldsandTest is Test {
 
     function test_PreventDoubleDeposit() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         vm.expectEmit(true, true, true, true);
         emit Funded(USER, 32 * 4 ether);
         goldsand.fund{value: 32 * 4 ether}();
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData1);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData1);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData2);
         goldsand.addDepositData(depositData2);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData2);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData2);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData3);
         goldsand.addDepositData(depositData3);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData3);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData3);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit DepositDataAdded(depositData4);
         goldsand.addDepositData(depositData4);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData4);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(DuplicateDepositDataDetected.selector);
         goldsand.addDepositData(depositData4);
     }
 
     function test_CallWithdrawETHNotEnoughEther() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         assertNotEq(goldsand.WITHDRAWAL_VAULT_ADDRESS(), address(0));
 
         assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 0 ether);
         assertEq(address(goldsand).balance, 0 ether);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(abi.encodeWithSelector(IWithdrawalVault.NotEnoughEther.selector, 16 ether, 0));
         goldsand.callWithdrawETH(16 ether);
 
@@ -572,9 +578,16 @@ contract GoldsandTest is Test {
         assertEq(address(goldsand).balance, 0 ether);
     }
 
+    function test_CallWithdrawETHZeroAmount() public {
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(OPERATOR);
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalVault.ZeroAmount.selector));
+        goldsand.callWithdrawETH(0 ether);
+    }
+
     function test_CallWithdrawETH() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         assertNotEq(goldsand.WITHDRAWAL_VAULT_ADDRESS(), address(0));
 
@@ -585,7 +598,7 @@ contract GoldsandTest is Test {
         assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 16 ether);
         assertEq(address(goldsand).balance, 0 ether);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit IWithdrawalVault.WithdrawalsReceived(16 ether);
         goldsand.callWithdrawETH(16 ether);
@@ -596,16 +609,14 @@ contract GoldsandTest is Test {
 
     function test_SetWithdrawalVaultZeroAddress() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
-        vm.prank(OWNER);
+        vm.prank(UPGRADER);
         vm.expectRevert(WithdrawalVaultZeroAddress.selector);
         goldsand.setWithdrawalVaultAddress(payable(address(0)));
     }
 
     function test_SetWithdrawalVaultTransfers() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         WithdrawalVault withdrawalVault = new WithdrawalVault(msg.sender, goldsand);
 
@@ -614,15 +625,14 @@ contract GoldsandTest is Test {
         emit OwnableUpgradeable.OwnershipTransferred(OWNER, address(goldsand));
         withdrawalVault.transferOwnership(address(goldsand));
 
-        vm.prank(OWNER);
+        vm.prank(UPGRADER);
         vm.expectEmit(true, true, true, true);
         emit WithdrawalVaultSet(withdrawalVault);
         goldsand.setWithdrawalVaultAddress(payable(address(withdrawalVault)));
     }
 
-    function test_receiveETHNotAsWithdrawalVault() public {
+    function test_ReceiveETHNotAsWithdrawalVault() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         vm.expectRevert();
@@ -631,7 +641,6 @@ contract GoldsandTest is Test {
 
     function test_WithdrawalVaultBalance() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         assertNotEq(goldsand.WITHDRAWAL_VAULT_ADDRESS(), address(0));
 
@@ -648,23 +657,21 @@ contract GoldsandTest is Test {
 
     function test_RecoverERC20ZeroAmount() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectRevert(IWithdrawalVault.ZeroAmount.selector);
         goldsand.callRecoverERC20(myERC20, 0 ether);
     }
 
     function test_RecoverERC20() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         myERC20.mint(goldsand.WITHDRAWAL_VAULT_ADDRESS(), 1 ether);
 
         assertEq(myERC20.balanceOf(goldsand.WITHDRAWAL_VAULT_ADDRESS()), 1 ether);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit IWithdrawalVault.ERC20Recovered(address(goldsand), address(myERC20), 0.5 ether);
         goldsand.callRecoverERC20(myERC20, 0.5 ether);
@@ -672,7 +679,6 @@ contract GoldsandTest is Test {
 
     function test_RecoverERC721() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(goldsand.WITHDRAWAL_VAULT_ADDRESS());
         myERC721.mint();
@@ -680,7 +686,7 @@ contract GoldsandTest is Test {
         assertEq(myERC721.balanceOf(address(goldsand)), 0);
         assertEq(myERC721.balanceOf(goldsand.WITHDRAWAL_VAULT_ADDRESS()), 1);
 
-        vm.prank(OWNER);
+        vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
         emit IWithdrawalVault.ERC721Recovered(address(goldsand), address(myERC721), 1);
         goldsand.callRecoverERC721(myERC721, 1);
@@ -691,7 +697,6 @@ contract GoldsandTest is Test {
 
     function testWithdrawalVaultReceive() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         (bool receiveSuccess,) = address(goldsand.WITHDRAWAL_VAULT_ADDRESS()).call{value: 1 ether}("");
@@ -700,7 +705,6 @@ contract GoldsandTest is Test {
 
     function testWithdrawalVaultFallback() public {
         vm.deal(USER, USER_STARTING_BALANCE);
-        vm.deal(OWNER, OWNER_STARTING_BALANCE);
 
         vm.prank(USER);
         (bool fallbackSuccess,) = address(goldsand.WITHDRAWAL_VAULT_ADDRESS()).call{value: 1 ether}("0x12345678");

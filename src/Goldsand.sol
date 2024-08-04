@@ -3,7 +3,8 @@ pragma solidity 0.8.24;
 
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
 import {DepositContract} from "./DepositContract.sol";
-import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from
+    "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import {PausableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -21,7 +22,11 @@ import {
     InvalidSignatureLength,
     InvalidDepositDataRoot,
     TooSmallDeposit,
-    WithdrawalVaultZeroAddress
+    WithdrawalVaultZeroAddress,
+    EMERGENCY_ROLE,
+    GOVERNANCE_ROLE,
+    OPERATOR_ROLE,
+    UPGRADER_ROLE
 } from "./interfaces/IGoldsand.sol";
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
@@ -34,7 +39,7 @@ import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol"
  * @author Asjad Syed
  * @notice Sharia-compliant Ethereum staking for 2B+ Muslims around the world
  */
-contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     /**
      * @notice Array of funder addresses.
      * @dev Used to index into funderToBalance.
@@ -111,9 +116,10 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * @param depositContractAddress The address of the deposit contract.
      */
     function initialize(address payable depositContractAddress) public initializer {
-        __Ownable_init(msg.sender);
+        __AccessControl_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         DEPOSIT_CONTRACT_ADDRESS = depositContractAddress;
         minEthDeposit = 0.05 ether;
     }
@@ -138,7 +144,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * @notice Sets the address of the withdrawal vault contract.
      * @param withdrawalVaultAddress The address of the withdrawal vault contract.
      */
-    function setWithdrawalVaultAddress(address payable withdrawalVaultAddress) external onlyOwner {
+    function setWithdrawalVaultAddress(address payable withdrawalVaultAddress) external onlyRole(UPGRADER_ROLE) {
         if (withdrawalVaultAddress == address(0)) {
             revert WithdrawalVaultZeroAddress();
         }
@@ -153,7 +159,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * unprofitable deposits.
      * @param _minEthDeposit The new minimum ETH deposit amount.
      */
-    function setMinEthDeposit(uint256 _minEthDeposit) external onlyOwner {
+    function setMinEthDeposit(uint256 _minEthDeposit) external onlyRole(GOVERNANCE_ROLE) {
         minEthDeposit = _minEthDeposit;
         emit MinEthDepositSet(_minEthDeposit);
     }
@@ -208,7 +214,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * We call this periodically to top up the contract with deposit datas.
      * @param _depositData The deposit data to add.
      */
-    function addDepositData(DepositData calldata _depositData) public onlyOwner whenNotPaused {
+    function addDepositData(DepositData calldata _depositData) public onlyRole(OPERATOR_ROLE) whenNotPaused {
         if (_depositData.pubkey.length != 48) {
             revert InvalidPubkeyLength();
         }
@@ -237,7 +243,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * We call this periodically to top up the contract with deposit datas.
      * @param _depositDatas Array of deposit data entries to add.
      */
-    function addDepositDatas(DepositData[] calldata _depositDatas) external onlyOwner whenNotPaused {
+    function addDepositDatas(DepositData[] calldata _depositDatas) external onlyRole(OPERATOR_ROLE) whenNotPaused {
         for (uint256 i = 0; i < _depositDatas.length; ++i) {
             addDepositData(_depositDatas[i]);
         }
@@ -248,7 +254,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * @dev The withdrawal vault sends the ETH back with receiveETH()
      * @param withdrawalsToWithdraw The amount of ETH to withdraw.
      */
-    function callWithdrawETH(uint256 withdrawalsToWithdraw) external onlyOwner {
+    function callWithdrawETH(uint256 withdrawalsToWithdraw) external onlyRole(OPERATOR_ROLE) {
         IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawETH(withdrawalsToWithdraw);
     }
 
@@ -257,7 +263,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * @param _token The ERC20 token to recover.
      * @param _amount The amount of the ERC20 token to recover.
      */
-    function callRecoverERC20(IERC20 _token, uint256 _amount) external onlyOwner {
+    function callRecoverERC20(IERC20 _token, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
         IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC20(_token, _amount);
     }
 
@@ -266,7 +272,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * @param _token The ERC721 token to recover.
      * @param _tokenId The ID of the ERC721 token to recover.
      */
-    function callRecoverERC721(IERC721 _token, uint256 _tokenId) external onlyOwner {
+    function callRecoverERC721(IERC721 _token, uint256 _tokenId) external onlyRole(OPERATOR_ROLE) {
         IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC721(_token, _tokenId);
     }
 
@@ -281,7 +287,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
     /**
      * @notice Emergency function: Withdraw all funds from the contract.
      */
-    function emergencyWithdraw() external onlyOwner whenPaused {
+    function emergencyWithdraw() external onlyRole(EMERGENCY_ROLE) whenPaused {
         uint256 balance = address(this).balance;
         (bool emergencyWithdrawSuccess,) = payable(msg.sender).call{value: balance}("");
         if (!emergencyWithdrawSuccess) {
@@ -295,7 +301,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * @dev This boilerplate function must be included to pause contracts
      * based on the Pausable module.
      */
-    function pause() external onlyOwner whenNotPaused {
+    function pause() external onlyRole(EMERGENCY_ROLE) whenNotPaused {
         _pause();
     }
 
@@ -304,7 +310,7 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * @dev This boilerplate function must be included to unpause contracts
      * based on the Pausable module.
      */
-    function unpause() external onlyOwner whenPaused {
+    function unpause() external onlyRole(EMERGENCY_ROLE) whenPaused {
         _unpause();
     }
 
@@ -314,5 +320,5 @@ contract Goldsand is IGoldsand, Initializable, OwnableUpgradeable, PausableUpgra
      * based on the UUPS pattern.
      * @param newImplementation Address of the new implementation contract.
      */
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 }
