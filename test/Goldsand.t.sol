@@ -615,7 +615,7 @@ contract GoldsandTest is Test {
     function test_SetWithdrawalVaultTransfers() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        WithdrawalVault withdrawalVault = new WithdrawalVault(payable(address(goldsand)));
+        WithdrawalVault withdrawalVault = new WithdrawalVault();
 
         vm.prank(UPGRADER);
         vm.expectEmit(true, true, true, true);

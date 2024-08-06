@@ -1,19 +1,36 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.24;
 
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {IERC20} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
+import {IERC721} from "openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
+import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 
-contract WithdrawalVault is IWithdrawalVault, Ownable {
+contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
-    IGoldsand public immutable GOLDSAND;
+    IGoldsand public GOLDSAND;
 
-    constructor(address payable goldsandAddress) Ownable(goldsandAddress) {
+    /**
+     * @dev Constructor that disables the initializers to prevent
+     * reinitialization during upgrades.
+     */
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initializes the contract with the Goldsand address.
+     * @dev The initialize function supplants the constructor in upgradeable
+     * contracts to separate deployment from initialization, enabling upgrades
+     * without reinitialization.
+     * @param goldsandAddress The address of the Goldsand contract.
+     */
+    function initialize(address payable goldsandAddress) public initializer {
+        __Ownable_init(goldsandAddress);
         GOLDSAND = IGoldsand(goldsandAddress);
     }
 

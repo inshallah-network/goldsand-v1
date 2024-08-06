@@ -4,7 +4,12 @@ pragma solidity 0.8.24;
 import {Script} from "forge-std/Script.sol";
 import {EMERGENCY_ROLE, GOVERNANCE_ROLE, OPERATOR_ROLE, UPGRADER_ROLE} from "./../src/interfaces/IGoldsand.sol";
 import {Goldsand} from "../src/Goldsand.sol";
-import {IGoldsand, MAINNET_DEPOSIT_CONTRACT_ADDRESS, HOLESKY_DEPOSIT_CONTRACT_ADDRESS, ANVIL_DEPOSIT_CONTRACT_ADDRESS} from "../src/interfaces/IGoldsand.sol";
+import {
+    IGoldsand,
+    MAINNET_DEPOSIT_CONTRACT_ADDRESS,
+    HOLESKY_DEPOSIT_CONTRACT_ADDRESS,
+    ANVIL_DEPOSIT_CONTRACT_ADDRESS
+} from "../src/interfaces/IGoldsand.sol";
 import {ERC1967Proxy} from
     "openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
