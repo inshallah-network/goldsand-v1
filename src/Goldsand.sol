@@ -41,12 +41,6 @@ import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol"
  */
 contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     /**
-     * @notice Array of funder addresses.
-     * @dev Used to index into funderToBalance.
-     */
-    address[] public funders;
-
-    /**
      * @notice Mapping of funder addresses to their balances.
      * @dev The keys are addresses of funders from the funders array.
      */
@@ -68,12 +62,12 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
      * @notice Address of the deposit contract.
      * @dev This is dependent on the chain we are deployed on.
      */
-    address payable private DEPOSIT_CONTRACT_ADDRESS;
+    address payable private depositContractAddress;
 
     /**
      * @notice Address of the withdrawal vault contract.
      */
-    address payable public WITHDRAWAL_VAULT_ADDRESS;
+    address payable public withdrawalVaultAddress;
 
     /**
      * @notice Minimum ETH deposit amount.
@@ -83,17 +77,7 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
     uint256 private minEthDeposit;
 
     /**
-     * @notice Gets the number of funders.
-     * @dev Only used for tests.
-     * @return The number of funders.
-     */
-    function getFundersLength() public view returns (uint256) {
-        return funders.length;
-    }
-
-    /**
      * @notice Gets the number of deposit datas.
-     * @dev Only used for tests.
      * @return The number of deposit datas.
      */
     function getDepositDatasLength() public view returns (uint256) {
@@ -113,14 +97,14 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
      * @dev The initialize function supplants the constructor in upgradeable
      * contracts to separate deployment from initialization, enabling upgrades
      * without reinitialization.
-     * @param depositContractAddress The address of the deposit contract.
+     * @param _depositContractAddress The address of the deposit contract.
      */
-    function initialize(address payable depositContractAddress) public initializer {
+    function initialize(address payable _depositContractAddress) public initializer {
         __AccessControl_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        DEPOSIT_CONTRACT_ADDRESS = depositContractAddress;
+        depositContractAddress = _depositContractAddress;
         minEthDeposit = 0.05 ether;
     }
 
@@ -142,14 +126,14 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
 
     /**
      * @notice Sets the address of the withdrawal vault contract.
-     * @param withdrawalVaultAddress The address of the withdrawal vault contract.
+     * @param _withdrawalVaultAddress The address of the withdrawal vault contract.
      */
-    function setWithdrawalVaultAddress(address payable withdrawalVaultAddress) external onlyRole(UPGRADER_ROLE) {
-        if (withdrawalVaultAddress == address(0)) {
+    function setWithdrawalVaultAddress(address payable _withdrawalVaultAddress) external onlyRole(UPGRADER_ROLE) {
+        if (_withdrawalVaultAddress == address(0)) {
             revert WithdrawalVaultZeroAddress();
         }
 
-        WITHDRAWAL_VAULT_ADDRESS = withdrawalVaultAddress;
+        withdrawalVaultAddress = _withdrawalVaultAddress;
         emit WithdrawalVaultSet(IWithdrawalVault(withdrawalVaultAddress));
     }
 
@@ -173,9 +157,6 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
         if (msg.value < minEthDeposit) {
             revert TooSmallDeposit();
         }
-        if (funderToBalance[msg.sender] == 0) {
-            funders.push(msg.sender);
-        }
         funderToBalance[msg.sender] += msg.value;
         depositFundsIfPossible();
         emit Funded(msg.sender, msg.value);
@@ -197,7 +178,7 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
 
         for (uint256 i = 0; i < numberOfDeposits; ++i) {
             // DepositContract emits an IDepositContract.DepositEvent
-            IDepositContract(DEPOSIT_CONTRACT_ADDRESS).deposit{value: 32 ether}(
+            IDepositContract(depositContractAddress).deposit{value: 32 ether}(
                 depositDatas[numberOfDepositDatas - 1].pubkey,
                 depositDatas[numberOfDepositDatas - 1].withdrawalCredentials,
                 depositDatas[numberOfDepositDatas - 1].signature,
@@ -255,7 +236,7 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
      * @param withdrawalsToWithdraw The amount of ETH to withdraw.
      */
     function callWithdrawETH(uint256 withdrawalsToWithdraw) external onlyRole(OPERATOR_ROLE) {
-        IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).withdrawETH(withdrawalsToWithdraw);
+        IWithdrawalVault(withdrawalVaultAddress).withdrawETH(withdrawalsToWithdraw);
     }
 
     /**
@@ -264,7 +245,7 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
      * @param _amount The amount of the ERC20 token to recover.
      */
     function callRecoverERC20(IERC20 _token, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
-        IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC20(_token, _amount);
+        IWithdrawalVault(withdrawalVaultAddress).recoverERC20(_token, _amount);
     }
 
     /**
@@ -273,14 +254,14 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
      * @param _tokenId The ID of the ERC721 token to recover.
      */
     function callRecoverERC721(IERC721 _token, uint256 _tokenId) external onlyRole(OPERATOR_ROLE) {
-        IWithdrawalVault(WITHDRAWAL_VAULT_ADDRESS).recoverERC721(_token, _tokenId);
+        IWithdrawalVault(withdrawalVaultAddress).recoverERC721(_token, _tokenId);
     }
 
     /**
      * @notice Receives ETH from the withdrawal vault.
      */
-    function receiveETH() external payable whenNotPaused {
-        require(msg.sender == WITHDRAWAL_VAULT_ADDRESS);
+    function receiveETH() external payable {
+        require(msg.sender == withdrawalVaultAddress);
         emit IWithdrawalVault.WithdrawalsReceived(msg.value);
     }
 

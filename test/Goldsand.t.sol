@@ -471,7 +471,6 @@ contract GoldsandTest is Test {
     function test_KeepStorageAcrossUpgrade() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        assertEq(goldsand.getFundersLength(), 0);
         assertEq(goldsand.funderToBalance(USER), 0 ether);
         assertEq(goldsand.getDepositDatasLength(), 0);
 
@@ -485,7 +484,6 @@ contract GoldsandTest is Test {
         emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
 
-        assertEq(goldsand.getFundersLength(), 1);
         assertEq(goldsand.funderToBalance(USER), 4 ether);
         assertEq(goldsand.getDepositDatasLength(), 1);
 
@@ -496,7 +494,6 @@ contract GoldsandTest is Test {
         emit Initializable.Initialized(2 ** 64 - 1);
         upgrade.run();
 
-        assertEq(goldsand.getFundersLength(), 1);
         assertEq(goldsand.funderToBalance(USER), 4 ether);
         assertEq(goldsand.getDepositDatasLength(), 1);
     }
@@ -565,16 +562,16 @@ contract GoldsandTest is Test {
     function test_CallWithdrawETHNotEnoughEther() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        assertNotEq(goldsand.WITHDRAWAL_VAULT_ADDRESS(), address(0));
+        assertNotEq(goldsand.withdrawalVaultAddress(), address(0));
 
-        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 0 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 0 ether);
         assertEq(address(goldsand).balance, 0 ether);
 
         vm.prank(OPERATOR);
         vm.expectRevert(abi.encodeWithSelector(IWithdrawalVault.NotEnoughEther.selector, 16 ether, 0));
         goldsand.callWithdrawETH(16 ether);
 
-        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 0 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 0 ether);
         assertEq(address(goldsand).balance, 0 ether);
     }
 
@@ -589,13 +586,13 @@ contract GoldsandTest is Test {
     function test_CallWithdrawETH() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        assertNotEq(goldsand.WITHDRAWAL_VAULT_ADDRESS(), address(0));
+        assertNotEq(goldsand.withdrawalVaultAddress(), address(0));
 
         vm.prank(USER);
-        (bool withdrawSuccess,) = payable(goldsand.WITHDRAWAL_VAULT_ADDRESS()).call{value: 16 ether}("");
+        (bool withdrawSuccess,) = payable(goldsand.withdrawalVaultAddress()).call{value: 16 ether}("");
         assertTrue(withdrawSuccess);
 
-        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 16 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 16 ether);
         assertEq(address(goldsand).balance, 0 ether);
 
         vm.prank(OPERATOR);
@@ -603,7 +600,7 @@ contract GoldsandTest is Test {
         emit IWithdrawalVault.WithdrawalsReceived(16 ether);
         goldsand.callWithdrawETH(16 ether);
 
-        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 0 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 0 ether);
         assertEq(address(goldsand).balance, 16 ether);
     }
 
@@ -618,12 +615,7 @@ contract GoldsandTest is Test {
     function test_SetWithdrawalVaultTransfers() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        WithdrawalVault withdrawalVault = new WithdrawalVault(msg.sender, goldsand);
-
-        vm.prank(msg.sender);
-        vm.expectEmit(true, true, true, true);
-        emit OwnableUpgradeable.OwnershipTransferred(OWNER, address(goldsand));
-        withdrawalVault.transferOwnership(address(goldsand));
+        WithdrawalVault withdrawalVault = new WithdrawalVault(payable(address(goldsand)));
 
         vm.prank(UPGRADER);
         vm.expectEmit(true, true, true, true);
@@ -642,17 +634,15 @@ contract GoldsandTest is Test {
     function test_WithdrawalVaultBalance() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        assertNotEq(goldsand.WITHDRAWAL_VAULT_ADDRESS(), address(0));
+        assertNotEq(goldsand.withdrawalVaultAddress(), address(0));
 
-        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 0 ether);
-        assertEq(WithdrawalVault(goldsand.WITHDRAWAL_VAULT_ADDRESS()).balanceOf(), 0 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 0 ether);
 
         vm.prank(USER);
-        (bool withdrawSuccess,) = payable(goldsand.WITHDRAWAL_VAULT_ADDRESS()).call{value: 16 ether}("");
+        (bool withdrawSuccess,) = payable(goldsand.withdrawalVaultAddress()).call{value: 16 ether}("");
         assertTrue(withdrawSuccess);
 
-        assertEq(goldsand.WITHDRAWAL_VAULT_ADDRESS().balance, 16 ether);
-        assertEq(WithdrawalVault(goldsand.WITHDRAWAL_VAULT_ADDRESS()).balanceOf(), 16 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 16 ether);
     }
 
     function test_RecoverERC20ZeroAmount() public {
@@ -667,9 +657,9 @@ contract GoldsandTest is Test {
         vm.deal(USER, USER_STARTING_BALANCE);
 
         vm.prank(USER);
-        myERC20.mint(goldsand.WITHDRAWAL_VAULT_ADDRESS(), 1 ether);
+        myERC20.mint(goldsand.withdrawalVaultAddress(), 1 ether);
 
-        assertEq(myERC20.balanceOf(goldsand.WITHDRAWAL_VAULT_ADDRESS()), 1 ether);
+        assertEq(myERC20.balanceOf(goldsand.withdrawalVaultAddress()), 1 ether);
 
         vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
@@ -680,11 +670,11 @@ contract GoldsandTest is Test {
     function test_RecoverERC721() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        vm.prank(goldsand.WITHDRAWAL_VAULT_ADDRESS());
+        vm.prank(goldsand.withdrawalVaultAddress());
         myERC721.mint();
 
         assertEq(myERC721.balanceOf(address(goldsand)), 0);
-        assertEq(myERC721.balanceOf(goldsand.WITHDRAWAL_VAULT_ADDRESS()), 1);
+        assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 1);
 
         vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
@@ -692,14 +682,14 @@ contract GoldsandTest is Test {
         goldsand.callRecoverERC721(myERC721, 1);
 
         assertEq(myERC721.balanceOf(address(goldsand)), 1);
-        assertEq(myERC721.balanceOf(goldsand.WITHDRAWAL_VAULT_ADDRESS()), 0);
+        assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 0);
     }
 
     function testWithdrawalVaultReceive() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
         vm.prank(USER);
-        (bool receiveSuccess,) = address(goldsand.WITHDRAWAL_VAULT_ADDRESS()).call{value: 1 ether}("");
+        (bool receiveSuccess,) = address(goldsand.withdrawalVaultAddress()).call{value: 1 ether}("");
         assert(receiveSuccess);
     }
 
@@ -707,7 +697,7 @@ contract GoldsandTest is Test {
         vm.deal(USER, USER_STARTING_BALANCE);
 
         vm.prank(USER);
-        (bool fallbackSuccess,) = address(goldsand.WITHDRAWAL_VAULT_ADDRESS()).call{value: 1 ether}("0x12345678");
+        (bool fallbackSuccess,) = address(goldsand.withdrawalVaultAddress()).call{value: 1 ether}("0x12345678");
         assert(fallbackSuccess);
     }
 }

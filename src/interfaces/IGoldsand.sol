@@ -50,9 +50,13 @@ bytes32 constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE"); // 0x97667070c54ef1
 
 bytes32 constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE"); // 0x189ab7a9244df0848122154315af71fe140f3db0fe014031783b0946b8c9d2e3
 
-interface IGoldsand {
-    function getFundersLength() external view returns (uint256);
+address payable constant MAINNET_DEPOSIT_CONTRACT_ADDRESS = payable(0x00000000219ab540356cBB839Cbe05303d7705Fa);
 
+address payable constant HOLESKY_DEPOSIT_CONTRACT_ADDRESS = payable(0x4242424242424242424242424242424242424242);
+
+address payable constant ANVIL_DEPOSIT_CONTRACT_ADDRESS = payable(0x00000000219ab540356cBB839Cbe05303d7705Fa);
+
+interface IGoldsand {
     function getDepositDatasLength() external view returns (uint256);
 
     function initialize(address payable depositContractAddress) external;

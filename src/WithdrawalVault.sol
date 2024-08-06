@@ -11,10 +11,10 @@ import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 contract WithdrawalVault is IWithdrawalVault, Ownable {
     using SafeERC20 for IERC20;
 
-    IGoldsand public GOLDSAND;
+    IGoldsand public immutable GOLDSAND;
 
-    constructor(address initialOwner, IGoldsand goldsand) Ownable(initialOwner) {
-        GOLDSAND = goldsand;
+    constructor(address payable goldsandAddress) Ownable(goldsandAddress) {
+        GOLDSAND = IGoldsand(goldsandAddress);
     }
 
     /**
@@ -63,14 +63,6 @@ contract WithdrawalVault is IWithdrawalVault, Ownable {
         emit ERC721Recovered(msg.sender, address(_token), _tokenId);
 
         _token.transferFrom(address(this), address(GOLDSAND), _tokenId);
-    }
-
-    /**
-     * @notice Get the balance of ETH held by the vault
-     * @return balance of ETH in the vault
-     */
-    function balanceOf() external view returns (uint256) {
-        return address(this).balance;
     }
 
     /**
