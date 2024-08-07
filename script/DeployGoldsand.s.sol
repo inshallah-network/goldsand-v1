@@ -57,6 +57,9 @@ contract DeployGoldsand is Script {
         proxyGoldsand.setWithdrawalVaultAddress(withdrawalVaultAddress);
         proxyGoldsand.renounceRole(UPGRADER_ROLE, tx.origin);
 
+        // 7. Give the deployer ownership of the WithdrawalVault
+        proxyWithdrawalVault.transferOwnership(tx.origin);
+
         vm.stopBroadcast();
         return proxyGoldsand;
     }

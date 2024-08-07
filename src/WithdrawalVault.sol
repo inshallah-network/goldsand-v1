@@ -8,8 +8,9 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
-contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable {
+contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     using SafeERC20 for IERC20;
 
     IGoldsand public GOLDSAND;
@@ -30,16 +31,16 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable 
      * @param goldsandAddress The address of the Goldsand contract.
      */
     function initialize(address payable goldsandAddress) public initializer {
-        __Ownable_init(goldsandAddress);
+        __Ownable_init(msg.sender);
         GOLDSAND = IGoldsand(goldsandAddress);
     }
 
     /**
-     * @notice Withdraw `_amount` of accumulated withdrawals to Goldsand contract
-     * @dev Can be called only by the Goldsand contract
+     * @notice Withdraw `_amount` of ETH to the `recipient` address
+     * @param recipient address to receive the withdrawn ETH
      * @param _amount amount of ETH to withdraw
      */
-    function withdrawETH(uint256 _amount) external onlyOwner {
+    function withdrawETH(address recipient, uint256 _amount) external onlyOwner {
         if (_amount == 0) {
             revert ZeroAmount();
         }
@@ -49,7 +50,12 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable 
             revert NotEnoughEther(_amount, balance);
         }
 
-        GOLDSAND.receiveETH{value: _amount}();
+        emit IWithdrawalVault.ETHWithdrawn(msg.sender, _amount);
+
+        (bool ethWithdrawalSuccess,) = payable(recipient).call{value: _amount}("");
+        if (!ethWithdrawalSuccess) {
+            revert ETHWithdrawalFailed(recipient, _amount);
+        }
     }
 
     /**
@@ -91,4 +97,12 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable 
      * @notice Fallback function to receive ETH
      */
     fallback() external payable {}
+
+    /**
+     * @notice Authorizes an upgrade of the contract.
+     * @dev This boilerplate function must be included to upgrade contracts
+     * based on the UUPS pattern.
+     * @param newImplementation Address of the new implementation contract.
+     */
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

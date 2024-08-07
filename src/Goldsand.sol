@@ -231,41 +231,6 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
     }
 
     /**
-     * @notice Calls the withdrawal vault to withdraw ETH.
-     * @dev The withdrawal vault sends the ETH back with receiveETH()
-     * @param withdrawalsToWithdraw The amount of ETH to withdraw.
-     */
-    function callWithdrawETH(uint256 withdrawalsToWithdraw) external onlyRole(OPERATOR_ROLE) {
-        IWithdrawalVault(withdrawalVaultAddress).withdrawETH(withdrawalsToWithdraw);
-    }
-
-    /**
-     * @notice Calls the withdrawal vault to recover ERC20 tokens.
-     * @param _token The ERC20 token to recover.
-     * @param _amount The amount of the ERC20 token to recover.
-     */
-    function callRecoverERC20(IERC20 _token, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
-        IWithdrawalVault(withdrawalVaultAddress).recoverERC20(_token, _amount);
-    }
-
-    /**
-     * @notice Calls the withdrawal vault to recover ERC721 tokens.
-     * @param _token The ERC721 token to recover.
-     * @param _tokenId The ID of the ERC721 token to recover.
-     */
-    function callRecoverERC721(IERC721 _token, uint256 _tokenId) external onlyRole(OPERATOR_ROLE) {
-        IWithdrawalVault(withdrawalVaultAddress).recoverERC721(_token, _tokenId);
-    }
-
-    /**
-     * @notice Receives ETH from the withdrawal vault.
-     */
-    function receiveETH() external payable {
-        require(msg.sender == withdrawalVaultAddress);
-        emit IWithdrawalVault.WithdrawalsReceived(msg.value);
-    }
-
-    /**
      * @notice Emergency function: Withdraw all funds from the contract.
      */
     function emergencyWithdraw() external onlyRole(EMERGENCY_ROLE) whenPaused {

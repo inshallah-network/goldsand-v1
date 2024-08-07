@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 import {Script} from "forge-std/Script.sol";
 import {EMERGENCY_ROLE, GOVERNANCE_ROLE, OPERATOR_ROLE, UPGRADER_ROLE} from "./../src/interfaces/IGoldsand.sol";
 import {Goldsand} from "../src/Goldsand.sol";
+import {WithdrawalVault} from "../src/WithdrawalVault.sol";
 import {
     IGoldsand,
     MAINNET_DEPOSIT_CONTRACT_ADDRESS,
@@ -38,18 +39,28 @@ contract UpgradeGoldsand is Script {
         // 2. Deploy the Goldsand implementation contract
         Goldsand newGoldsandImpl = new Goldsand();
 
+        // 3. Deploy the WithdrawalVault implementation contract
+        WithdrawalVault newWithdrawalVaultImpl = new WithdrawalVault();
+
         vm.stopBroadcast();
 
-        // 3. Upgrade the Goldsand implementation contract
-        upgradeAddress(mostRecentlyDeployedProxy, address(newGoldsandImpl));
+        // 4. Upgrade the Goldsand implementation contract
+        upgradeAddress(mostRecentlyDeployedProxy, address(newGoldsandImpl), address(newWithdrawalVaultImpl));
     }
 
-    function upgradeAddress(address payable proxyAddress, address newGoldsandImpl) public {
+    function upgradeAddress(
+        address payable proxyGoldsandAddress,
+        address newGoldsandImplAddress,
+        address newWithdrawalVaultImplAddress
+    ) public {
         vm.startBroadcast();
-        Goldsand proxyGoldsand = Goldsand(proxyAddress);
+        Goldsand proxyGoldsand = Goldsand(proxyGoldsandAddress);
+        address payable proxyWithdrawalVaultAddress = proxyGoldsand.withdrawalVaultAddress();
+        WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyWithdrawalVaultAddress);
         proxyGoldsand.grantRole(UPGRADER_ROLE, tx.origin);
-        proxyGoldsand.upgradeToAndCall(address(newGoldsandImpl), "");
+        proxyGoldsand.upgradeToAndCall(newGoldsandImplAddress, "");
         proxyGoldsand.renounceRole(UPGRADER_ROLE, tx.origin);
+        proxyWithdrawalVault.upgradeToAndCall(newWithdrawalVaultImplAddress, "");
         vm.stopBroadcast();
     }
 }

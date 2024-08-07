@@ -75,10 +75,6 @@ interface IGoldsand {
 
     function addDepositDatas(DepositData[] calldata _depositDatas) external;
 
-    function callWithdrawETH(uint256 withdrawalsToWithdraw) external;
-
-    function receiveETH() external payable;
-
     function emergencyWithdraw() external;
 
     function pause() external;

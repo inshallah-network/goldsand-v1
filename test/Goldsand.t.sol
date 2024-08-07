@@ -78,12 +78,13 @@ contract GoldsandTest is Test {
     MyERC20 myERC20;
     MyERC721 myERC721;
 
-    address immutable USER = makeAddr("USER");
-    address immutable OWNER = msg.sender;
-    address immutable EMERGENCY = makeAddr("EMERGENCY");
-    address immutable GOVERNANCE = makeAddr("GOVERNANCE");
-    address immutable OPERATOR = makeAddr("OPERATOR");
-    address immutable UPGRADER = makeAddr("UPGRADER");
+    address immutable USER = makeAddr("USER"); // 0xF921F4FA82620d8D2589971798c51aeD0C02c81a
+    address immutable OWNER = msg.sender; // 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
+    address immutable EMERGENCY = makeAddr("EMERGENCY"); // 0x4721cB0D6C1215210b1C1979Cb90446366344A7E
+    address immutable GOVERNANCE = makeAddr("GOVERNANCE"); // 0xFC538Ae3f25F29Bfc39188Dbe726D46cbf3D00C6
+    address immutable OPERATOR = makeAddr("OPERATOR"); // 0xd1b0c5cBF884fcc27dAF9f733739b39FB0B7DAa1
+    address immutable UPGRADER = makeAddr("UPGRADER"); // 0x8B1D4B40080A998c21c5175fC6f0dd531Fe2Cb5E
+    uint256 constant OWNER_STARTING_BALANCE = 0 ether;
     uint256 constant USER_STARTING_BALANCE = 256 ether;
 
     DepositData depositData1 = DepositData(
@@ -560,6 +561,7 @@ contract GoldsandTest is Test {
     }
 
     function test_CallWithdrawETHNotEnoughEther() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
         vm.deal(USER, USER_STARTING_BALANCE);
 
         assertNotEq(goldsand.withdrawalVaultAddress(), address(0));
@@ -567,41 +569,76 @@ contract GoldsandTest is Test {
         assertEq(goldsand.withdrawalVaultAddress().balance, 0 ether);
         assertEq(address(goldsand).balance, 0 ether);
 
-        vm.prank(OPERATOR);
+        vm.prank(OWNER);
         vm.expectRevert(abi.encodeWithSelector(IWithdrawalVault.NotEnoughEther.selector, 16 ether, 0));
-        goldsand.callWithdrawETH(16 ether);
+        proxyWithdrawalVault.withdrawETH(address(goldsand), 16 ether);
 
         assertEq(goldsand.withdrawalVaultAddress().balance, 0 ether);
         assertEq(address(goldsand).balance, 0 ether);
     }
 
     function test_CallWithdrawETHZeroAmount() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        vm.prank(OPERATOR);
+        vm.prank(OWNER);
         vm.expectRevert(abi.encodeWithSelector(IWithdrawalVault.ZeroAmount.selector));
-        goldsand.callWithdrawETH(0 ether);
+        proxyWithdrawalVault.withdrawETH(address(goldsand), 0 ether);
     }
 
-    function test_CallWithdrawETH() public {
+    function test_CallWithdrawETHSucceeds() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
+        vm.deal(OWNER, OWNER_STARTING_BALANCE);
         vm.deal(USER, USER_STARTING_BALANCE);
 
         assertNotEq(goldsand.withdrawalVaultAddress(), address(0));
 
-        vm.prank(USER);
-        (bool withdrawSuccess,) = payable(goldsand.withdrawalVaultAddress()).call{value: 16 ether}("");
-        assertTrue(withdrawSuccess);
+        (bool callSuccess,) = payable(goldsand.withdrawalVaultAddress()).call{value: 32 ether}("");
+        assertTrue(callSuccess);
 
-        assertEq(goldsand.withdrawalVaultAddress().balance, 16 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether);
         assertEq(address(goldsand).balance, 0 ether);
+        assertEq(OWNER.balance, OWNER_STARTING_BALANCE);
+        assertEq(USER.balance, USER_STARTING_BALANCE);
 
-        vm.prank(OPERATOR);
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.WithdrawalsReceived(16 ether);
-        goldsand.callWithdrawETH(16 ether);
+        emit IWithdrawalVault.ETHWithdrawn(OWNER, 4 ether);
+        proxyWithdrawalVault.withdrawETH(address(goldsand), 4 ether);
 
-        assertEq(goldsand.withdrawalVaultAddress().balance, 0 ether);
-        assertEq(address(goldsand).balance, 16 ether);
+        assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether - 4 ether);
+        assertEq(address(goldsand).balance, 4 ether);
+        assertEq(OWNER.balance, OWNER_STARTING_BALANCE);
+        assertEq(USER.balance, USER_STARTING_BALANCE);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ETHWithdrawn(OWNER, 4 ether);
+        proxyWithdrawalVault.withdrawETH(OWNER, 4 ether);
+
+        assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether - 4 ether - 4 ether);
+        assertEq(address(goldsand).balance, 4 ether);
+        assertEq(OWNER.balance, OWNER_STARTING_BALANCE + 4 ether);
+        assertEq(USER.balance, USER_STARTING_BALANCE);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ETHWithdrawn(OWNER, 4 ether);
+        proxyWithdrawalVault.withdrawETH(USER, 4 ether);
+
+        assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether - 4 ether - 4 ether - 4 ether);
+        assertEq(address(goldsand).balance, 4 ether);
+        assertEq(OWNER.balance, OWNER_STARTING_BALANCE + 4 ether);
+        assertEq(USER.balance, USER_STARTING_BALANCE + 4 ether);
+
+        vm.prank(USER);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, USER));
+        proxyWithdrawalVault.withdrawETH(USER, 4 ether);
+
+        assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether - 4 ether - 4 ether - 4 ether);
+        assertEq(address(goldsand).balance, 4 ether);
+        assertEq(OWNER.balance, OWNER_STARTING_BALANCE + 4 ether);
+        assertEq(USER.balance, USER_STARTING_BALANCE + 4 ether);
     }
 
     function test_SetWithdrawalVaultZeroAddress() public {
@@ -623,14 +660,6 @@ contract GoldsandTest is Test {
         goldsand.setWithdrawalVaultAddress(payable(address(withdrawalVault)));
     }
 
-    function test_ReceiveETHNotAsWithdrawalVault() public {
-        vm.deal(USER, USER_STARTING_BALANCE);
-
-        vm.prank(USER);
-        vm.expectRevert();
-        goldsand.receiveETH{value: 1 ether}();
-    }
-
     function test_WithdrawalVaultBalance() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
@@ -646,14 +675,16 @@ contract GoldsandTest is Test {
     }
 
     function test_RecoverERC20ZeroAmount() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
         vm.deal(USER, USER_STARTING_BALANCE);
 
-        vm.prank(OPERATOR);
+        vm.prank(OWNER);
         vm.expectRevert(IWithdrawalVault.ZeroAmount.selector);
-        goldsand.callRecoverERC20(myERC20, 0 ether);
+        proxyWithdrawalVault.recoverERC20(myERC20, 0 ether);
     }
 
-    function test_RecoverERC20() public {
+    function test_RecoverERC20Succeeds() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
         vm.deal(USER, USER_STARTING_BALANCE);
 
         vm.prank(USER);
@@ -661,13 +692,14 @@ contract GoldsandTest is Test {
 
         assertEq(myERC20.balanceOf(goldsand.withdrawalVaultAddress()), 1 ether);
 
-        vm.prank(OPERATOR);
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.ERC20Recovered(address(goldsand), address(myERC20), 0.5 ether);
-        goldsand.callRecoverERC20(myERC20, 0.5 ether);
+        emit IWithdrawalVault.ERC20Recovered(OWNER, address(myERC20), 0.5 ether);
+        proxyWithdrawalVault.recoverERC20(myERC20, 0.5 ether);
     }
 
     function test_RecoverERC721() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
         vm.deal(USER, USER_STARTING_BALANCE);
 
         vm.prank(goldsand.withdrawalVaultAddress());
@@ -676,10 +708,10 @@ contract GoldsandTest is Test {
         assertEq(myERC721.balanceOf(address(goldsand)), 0);
         assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 1);
 
-        vm.prank(OPERATOR);
+        vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.ERC721Recovered(address(goldsand), address(myERC721), 1);
-        goldsand.callRecoverERC721(myERC721, 1);
+        emit IWithdrawalVault.ERC721Recovered(OWNER, address(myERC721), 1);
+        proxyWithdrawalVault.recoverERC721(myERC721, 1);
 
         assertEq(myERC721.balanceOf(address(goldsand)), 1);
         assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 0);

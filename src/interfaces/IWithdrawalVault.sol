@@ -10,7 +10,7 @@ interface IWithdrawalVault {
 
     event GoldsandSet(IGoldsand goldsand);
 
-    event WithdrawalsReceived(uint256 amount);
+    event ETHWithdrawn(address indexed requestedBy, uint256 amount);
 
     /**
      * Emitted when the ERC20 `token` recovered (i.e. transferred)
@@ -25,6 +25,7 @@ interface IWithdrawalVault {
     event ERC721Recovered(address indexed requestedBy, address indexed token, uint256 tokenId);
 
     // Errors
+    error ETHWithdrawalFailed(address recipient, uint256 amount);
     error GoldsandZeroAddress();
     error NotEnoughEther(uint256 requested, uint256 balance);
     error ZeroAmount();
@@ -34,7 +35,7 @@ interface IWithdrawalVault {
      * @dev Can be called only by the Goldsand contract
      * @param _amount amount of ETH to withdraw
      */
-    function withdrawETH(uint256 _amount) external;
+    function withdrawETH(address recipient, uint256 _amount) external;
 
     /**
      * Transfers a given `_amount` of an ERC20-token (defined by the `_token` contract address)
