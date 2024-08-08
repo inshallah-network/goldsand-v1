@@ -71,6 +71,18 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
     }
 
     /**
+     * @notice Transfers a given `_amount` of an ERC1155 token (defined by the `_token` contract address)
+     * with `_tokenId` to the `recipient` address.
+     * @param recipient The address to receive the recovered ERC1155 token.
+     * @param _token The ERC1155 token contract.
+     * @param _tokenId The ID of the ERC1155 token to transfer.
+     * @param _amount The amount of ERC1155 tokens to transfer.
+     */
+    function recoverERC1155(address recipient, IERC1155 _token, uint256 _tokenId, uint256 _amount) external onlyOwner {
+        return Lib.recoverERC1155(recipient, _token, _tokenId, _amount);
+    }
+
+    /**
      * @notice Transfers a batch of ERC1155 tokens (defined by the `_token` contract address)
      * with `_tokenIds` and corresponding `_amounts` to the `recipient` address.
      * @param recipient The address to receive the recovered ERC1155 tokens.
@@ -85,18 +97,6 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
         uint256[] calldata _amounts
     ) external onlyOwner {
         return Lib.recoverBatchERC1155(recipient, _token, _tokenIds, _amounts);
-    }
-
-    /**
-     * @notice Transfers a given `_amount` of an ERC1155 token (defined by the `_token` contract address)
-     * with `_tokenId` to the `recipient` address.
-     * @param recipient The address to receive the recovered ERC1155 token.
-     * @param _token The ERC1155 token contract.
-     * @param _tokenId The ID of the ERC1155 token to transfer.
-     * @param _amount The amount of ERC1155 tokens to transfer.
-     */
-    function recoverERC1155(address recipient, IERC1155 _token, uint256 _tokenId, uint256 _amount) external onlyOwner {
-        return Lib.recoverERC1155(recipient, _token, _tokenId, _amount);
     }
 
     function onERC1155Received(
