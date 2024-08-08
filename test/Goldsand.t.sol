@@ -705,15 +705,49 @@ contract GoldsandTest is Test {
         vm.prank(goldsand.withdrawalVaultAddress());
         myERC721.mint();
 
+        assertEq(myERC721.balanceOf(USER), 0);
         assertEq(myERC721.balanceOf(address(goldsand)), 0);
         assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 1);
+
+        vm.prank(goldsand.withdrawalVaultAddress());
+        myERC721.mint();
+
+        assertEq(myERC721.balanceOf(USER), 0);
+        assertEq(myERC721.balanceOf(address(goldsand)), 0);
+        assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 2);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
         emit IWithdrawalVault.ERC721Recovered(USER, OWNER, address(myERC721), 1);
         proxyWithdrawalVault.recoverERC721(USER, myERC721, 1);
 
+        assertEq(myERC721.balanceOf(USER), 1);
+        assertEq(myERC721.balanceOf(address(goldsand)), 0);
+        assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 1);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ERC721Recovered(USER, OWNER, address(myERC721), 2);
+        proxyWithdrawalVault.recoverERC721(USER, myERC721, 2);
+
+        assertEq(myERC721.balanceOf(USER), 2);
+        assertEq(myERC721.balanceOf(address(goldsand)), 0);
+        assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 0);
+
+        vm.prank(USER);
+        myERC721.transferFrom(USER, address(goldsand), 1);
+
+        assertEq(myERC721.balanceOf(USER), 1);
         assertEq(myERC721.balanceOf(address(goldsand)), 1);
+        assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 0);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ERC721Recovered(USER, OPERATOR, address(myERC721), 1);
+        goldsand.recoverERC721(USER, myERC721, 1);
+
+        assertEq(myERC721.balanceOf(USER), 2);
+        assertEq(myERC721.balanceOf(address(goldsand)), 0);
         assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 0);
     }
 

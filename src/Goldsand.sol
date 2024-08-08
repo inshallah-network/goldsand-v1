@@ -231,6 +231,39 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
     }
 
     /**
+     * @notice Withdraws `_amount` of ETH to the `recipient` address.
+     * @param recipient The address to receive the withdrawn ETH.
+     * @param _amount The amount of ETH to withdraw.
+     */
+    function withdrawETH(address recipient, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
+        return Lib.withdrawETH(recipient, _amount);
+    }
+
+    /**
+     * Transfers a given `_amount` of an ERC20-token (defined by the `_token` contract address)
+     * to the `recipient` address.
+     *
+     * @param recipient The address to receive the recovered ERC20 tokens.
+     * @param _token an ERC20-compatible token
+     * @param _amount token amount
+     */
+    function recoverERC20(address recipient, IERC20 _token, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
+        return Lib.recoverERC20(recipient, _token, _amount);
+    }
+
+    /**
+     * Transfers a given `_tokenId` of an ERC721-compatible NFT (defined by the `_token` contract address)
+     * to the `recipient` address.
+     *
+     * @param recipient The address to receive the recovered ERC721 NFT.
+     * @param _token an ERC721-compatible token
+     * @param _tokenId minted token id
+     */
+    function recoverERC721(address recipient, IERC721 _token, uint256 _tokenId) external onlyRole(OPERATOR_ROLE) {
+        return Lib.recoverERC721(recipient, _token, _tokenId);
+    }
+
+    /**
      * @notice Emergency function: Withdraw all funds from the contract.
      */
     function emergencyWithdraw() external onlyRole(EMERGENCY_ROLE) whenPaused {
