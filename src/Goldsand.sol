@@ -11,12 +11,10 @@ import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/prox
 import {
     DepositData,
     DepositDataAdded,
-    EmergencyWithdrawal,
     Funded,
     MinEthDepositSet,
     WithdrawalVaultSet,
     DuplicateDepositDataDetected,
-    EmergencyWithdrawalFailed,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
     InvalidSignatureLength,
@@ -267,12 +265,11 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
      * @notice Emergency function: Withdraw all funds from the contract.
      */
     function emergencyWithdraw() external onlyRole(EMERGENCY_ROLE) whenPaused {
+        try IWithdrawalVault(withdrawalVaultAddress).withdrawETH(msg.sender, withdrawalVaultAddress.balance) {} catch {}
         uint256 balance = address(this).balance;
-        (bool emergencyWithdrawSuccess,) = payable(msg.sender).call{value: balance}("");
-        if (!emergencyWithdrawSuccess) {
-            revert EmergencyWithdrawalFailed(msg.sender, balance);
+        if (balance > 0) {
+            Lib.withdrawETH(msg.sender, balance);
         }
-        emit EmergencyWithdrawal(msg.sender, balance);
     }
 
     /**

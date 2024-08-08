@@ -74,12 +74,11 @@ library Lib {
             revert IWithdrawalVault.NotEnoughEther(_amount, balance);
         }
 
-        emit IWithdrawalVault.ETHWithdrawn(recipient, msg.sender, _amount);
-
         (bool ethWithdrawalSuccess,) = payable(recipient).call{value: _amount}("");
         if (!ethWithdrawalSuccess) {
             revert IWithdrawalVault.ETHWithdrawalFailed(recipient, _amount);
         }
+        emit IWithdrawalVault.ETHWithdrawn(recipient, msg.sender, _amount);
     }
 
     /**

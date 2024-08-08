@@ -5,12 +5,10 @@ import {Goldsand} from "./../src/Goldsand.sol";
 import {
     DepositData,
     DepositDataAdded,
-    EmergencyWithdrawal,
     Funded,
     MinEthDepositSet,
     WithdrawalVaultSet,
     DuplicateDepositDataDetected,
-    EmergencyWithdrawalFailed,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
     InvalidSignatureLength,
@@ -30,7 +28,7 @@ import {IDepositContract} from "./../src/interfaces/IDepositContract.sol";
 import {IWithdrawalVault} from "./../src/interfaces/IWithdrawalVault.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {PausableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/utils/PausableUpgradeable.sol";
-import {Test} from "forge-std/Test.sol";
+import {Test, Vm} from "forge-std/Test.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
@@ -349,7 +347,7 @@ contract GoldsandTest is Test {
         goldsand.addDepositData(depositDataWithInvalidDataRoot);
     }
 
-    function test_EmergencyWithdraw() public {
+    function test_EmergencyWithdrawSucceeds() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
         vm.prank(USER);
@@ -364,13 +362,42 @@ contract GoldsandTest is Test {
 
         vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
-        emit EmergencyWithdrawal(EMERGENCY, 123 ether);
+        emit IWithdrawalVault.ETHWithdrawn(EMERGENCY, EMERGENCY, 123 ether);
         goldsand.emergencyWithdraw();
+
+        vm.recordLogs();
+        vm.prank(EMERGENCY);
+        goldsand.emergencyWithdraw();
+        vm.assertEq(vm.getRecordedLogs().length, 0);
 
         vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
-        emit EmergencyWithdrawal(EMERGENCY, 0);
+        emit PausableUpgradeable.Unpaused(EMERGENCY);
+        goldsand.unpause();
+
+        vm.prank(USER);
+        vm.expectEmit(true, true, true, true);
+        emit Funded(USER, 123 ether);
+        goldsand.fund{value: 123 ether}();
+
+        (bool callSuccess,) = payable(goldsand.withdrawalVaultAddress()).call{value: 111 ether}("");
+        assertTrue(callSuccess);
+
+        vm.prank(EMERGENCY);
+        vm.expectEmit(true, true, true, true);
+        emit PausableUpgradeable.Paused(EMERGENCY);
+        goldsand.pause();
+
+        vm.prank(EMERGENCY);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ETHWithdrawn(EMERGENCY, EMERGENCY, 123 ether);
+        emit IWithdrawalVault.ETHWithdrawn(EMERGENCY, EMERGENCY, 111 ether);
         goldsand.emergencyWithdraw();
+
+        vm.recordLogs();
+        vm.prank(EMERGENCY);
+        goldsand.emergencyWithdraw();
+        vm.assertEq(vm.getRecordedLogs().length, 0);
 
         vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
@@ -383,6 +410,11 @@ contract GoldsandTest is Test {
 
         RejectEther rejectEther = new RejectEther();
 
+        vm.prank(USER);
+        vm.expectEmit(true, true, true, true);
+        emit Funded(USER, 123 ether);
+        goldsand.fund{value: 123 ether}();
+
         vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
         emit PausableUpgradeable.Paused(EMERGENCY);
@@ -391,7 +423,9 @@ contract GoldsandTest is Test {
         vm.prank(msg.sender);
         goldsand.grantRole(EMERGENCY_ROLE, address(rejectEther));
 
-        vm.expectRevert(abi.encodeWithSelector(EmergencyWithdrawalFailed.selector, address(rejectEther), 0 ether));
+        vm.expectRevert(
+            abi.encodeWithSelector(IWithdrawalVault.ETHWithdrawalFailed.selector, address(rejectEther), 123 ether)
+        );
         rejectEther.callEmergencyWithdraw(goldsand);
 
         vm.prank(EMERGENCY);

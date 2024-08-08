@@ -14,8 +14,6 @@ struct DepositData {
 
 event DepositDataAdded(DepositData depositData);
 
-event EmergencyWithdrawal(address recipient, uint256 amount);
-
 event Funded(address funder, uint256 amount);
 
 event MinEthDepositSet(uint256 amount);
@@ -29,8 +27,6 @@ event WithdrawalVaultSet(IWithdrawalVault withdrawalVault);
 // unpause() emits an Unpaused event
 
 error DuplicateDepositDataDetected();
-
-error EmergencyWithdrawalFailed(address recipient, uint256 amount);
 
 error InvalidPubkeyLength();
 
