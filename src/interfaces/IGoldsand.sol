@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {IWithdrawalVault} from "./IWithdrawalVault.sol";
 
 struct DepositData {
@@ -74,6 +76,12 @@ interface IGoldsand {
     function addDepositData(DepositData calldata _depositData) external;
 
     function addDepositDatas(DepositData[] calldata _depositDatas) external;
+
+    function withdrawETH(address recipient, uint256 _amount) external;
+
+    function recoverERC20(address recipient, IERC20 _token, uint256 _amount) external;
+
+    function recoverERC721(address recipient, IERC721 _token, uint256 _tokenId) external;
 
     function emergencyWithdraw() external;
 

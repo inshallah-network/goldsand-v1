@@ -28,7 +28,6 @@ interface IWithdrawalVault {
 
     // Errors
     error ETHWithdrawalFailed(address recipient, uint256 amount);
-    error GoldsandZeroAddress();
     error NotEnoughEther(uint256 requested, uint256 balance);
     error ZeroAmount();
 
