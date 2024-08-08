@@ -32,6 +32,7 @@ import {Test, Vm} from "forge-std/Test.sol";
 import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {ERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import {ERC1155, IERC1155} from "openzeppelin-contracts/contracts/token/ERC1155/ERC1155.sol";
 import {IERC1967} from "openzeppelin-contracts/contracts/interfaces/IERC1967.sol";
 import {Lib} from "./../src/lib/Lib.sol";
 
@@ -61,6 +62,22 @@ contract MyERC721 is ERC721 {
     }
 }
 
+contract MyERC1155 is ERC1155 {
+    constructor() ERC1155("") {}
+
+    function mint(address account, uint256 id, uint256 amount, bytes memory data) public {
+        _mint(account, id, amount, data);
+    }
+
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public {
+        _mintBatch(to, ids, amounts, data);
+    }
+
+    function update(address from, address to, uint256[] memory ids, uint256[] memory values) public {
+        _update(from, to, ids, values);
+    }
+}
+
 contract RejectEther {
     receive() external payable {
         revert("Rejected Ether");
@@ -75,6 +92,7 @@ contract GoldsandTest is Test {
     Goldsand goldsand;
     MyERC20 myERC20;
     MyERC721 myERC721;
+    MyERC1155 myERC1155;
 
     address immutable USER = makeAddr("USER"); // 0xF921F4FA82620d8D2589971798c51aeD0C02c81a
     address immutable OWNER = msg.sender; // 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
@@ -149,6 +167,7 @@ contract GoldsandTest is Test {
 
         myERC20 = new MyERC20();
         myERC721 = new MyERC721("Test", "TEST");
+        myERC1155 = new MyERC1155();
     }
 
     function test_AddAndFund() public {
@@ -783,6 +802,101 @@ contract GoldsandTest is Test {
         assertEq(myERC721.balanceOf(USER), 2);
         assertEq(myERC721.balanceOf(address(goldsand)), 0);
         assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 0);
+    }
+
+    function test_MintERC1155NotAccepted() public {
+        address withdrawalVaultAddress = goldsand.withdrawalVaultAddress();
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(USER);
+        vm.expectRevert(IWithdrawalVault.ERC1155NotAccepted.selector);
+        myERC1155.mint(withdrawalVaultAddress, 1, 2 ether, "");
+
+        assertEq(myERC1155.balanceOf(goldsand.withdrawalVaultAddress(), 1), 0 ether);
+    }
+
+    function test_RecoverERC1155Succeeds() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
+        address withdrawalVaultAddress = goldsand.withdrawalVaultAddress();
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(USER);
+        myERC1155.mint(USER, 1, 2 ether, "");
+
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = uint256(1);
+        uint256[] memory values = new uint256[](1);
+        values[0] = uint256(2 ether);
+
+        vm.prank(USER);
+        myERC1155.update(USER, withdrawalVaultAddress, ids, values);
+
+        assertEq(myERC1155.balanceOf(goldsand.withdrawalVaultAddress(), 1), 2 ether);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ERC1155Recovered(USER, OWNER, address(myERC1155), 1, 2 ether);
+        proxyWithdrawalVault.recoverERC1155(USER, myERC1155, 1, 2 ether);
+
+        assertEq(myERC1155.balanceOf(USER, 1), 2 ether);
+    }
+
+    function test_MintBatchERC1155NotAccepted() public {
+        address withdrawalVaultAddress = goldsand.withdrawalVaultAddress();
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = uint256(2);
+        ids[1] = uint256(3);
+        ids[2] = uint256(4);
+        uint256[] memory values = new uint256[](3);
+        values[0] = uint256(0.1 ether);
+        values[1] = uint256(0.2 ether);
+        values[2] = uint256(0.3 ether);
+
+        vm.prank(USER);
+        vm.expectRevert(IWithdrawalVault.ERC1155NotAccepted.selector);
+        myERC1155.mintBatch(withdrawalVaultAddress, ids, values, "");
+
+        assertEq(myERC1155.balanceOf(goldsand.withdrawalVaultAddress(), 1), 0 ether);
+    }
+
+    function test_RecoverBatchERC1155Succeeds() public {
+        IWithdrawalVault proxyWithdrawalVault = IWithdrawalVault(goldsand.withdrawalVaultAddress());
+        address withdrawalVaultAddress = goldsand.withdrawalVaultAddress();
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        uint256[] memory ids = new uint256[](3);
+        ids[0] = uint256(2);
+        ids[1] = uint256(3);
+        ids[2] = uint256(4);
+        uint256[] memory values = new uint256[](3);
+        values[0] = uint256(0.1 ether);
+        values[1] = uint256(0.2 ether);
+        values[2] = uint256(0.3 ether);
+
+        vm.prank(USER);
+        myERC1155.mint(USER, ids[0], values[0], "");
+        vm.prank(USER);
+        myERC1155.mint(USER, ids[1], values[1], "");
+        vm.prank(USER);
+        myERC1155.mint(USER, ids[2], values[2], "");
+
+        vm.prank(USER);
+        myERC1155.update(USER, withdrawalVaultAddress, ids, values);
+
+        assertEq(myERC1155.balanceOf(goldsand.withdrawalVaultAddress(), ids[0]), values[0]);
+        assertEq(myERC1155.balanceOf(goldsand.withdrawalVaultAddress(), ids[1]), values[1]);
+        assertEq(myERC1155.balanceOf(goldsand.withdrawalVaultAddress(), ids[2]), values[2]);
+
+        vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ERC1155BatchRecovered(USER, OWNER, address(myERC1155), ids, values);
+        proxyWithdrawalVault.recoverBatchERC1155(USER, myERC1155, ids, values);
+
+        assertEq(myERC1155.balanceOf(USER, ids[0]), values[0]);
+        assertEq(myERC1155.balanceOf(USER, ids[1]), values[1]);
+        assertEq(myERC1155.balanceOf(USER, ids[2]), values[2]);
     }
 
     function testWithdrawalVaultReceive() public {

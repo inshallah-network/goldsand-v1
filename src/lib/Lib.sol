@@ -5,6 +5,7 @@ import {DepositData} from "./../interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./../interfaces/IWithdrawalVault.sol";
 import {IERC20} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import {IERC721} from "openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
+import {IERC1155} from "openzeppelin-contracts-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 library Lib {
@@ -82,12 +83,11 @@ library Lib {
     }
 
     /**
-     * Transfers a given `_amount` of an ERC20-token (defined by the `_token` contract address)
+     * @notice Transfers a given `_amount` of an ERC20 token (defined by the `_token` contract address)
      * to the `recipient` address.
-     *
      * @param recipient The address to receive the recovered ERC20 tokens.
-     * @param _token an ERC20-compatible token
-     * @param _amount token amount
+     * @param _token The ERC20 token contract.
+     * @param _amount The amount of ERC20 tokens to transfer.
      */
     function recoverERC20(address recipient, IERC20 _token, uint256 _amount) internal {
         if (_amount == 0) {
@@ -100,16 +100,56 @@ library Lib {
     }
 
     /**
-     * Transfers a given `_tokenId` of an ERC721-compatible NFT (defined by the `_token` contract address)
+     * @notice Transfers a given ERC721 token (defined by the `_token` contract address) with `_tokenId`
      * to the `recipient` address.
-     *
      * @param recipient The address to receive the recovered ERC721 NFT.
-     * @param _token an ERC721-compatible token
-     * @param _tokenId minted token id
+     * @param _token The ERC721 token contract.
+     * @param _tokenId The ID of the ERC721 token to transfer.
      */
     function recoverERC721(address recipient, IERC721 _token, uint256 _tokenId) internal {
         emit IWithdrawalVault.ERC721Recovered(recipient, msg.sender, address(_token), _tokenId);
 
-        _token.transferFrom(address(this), recipient, _tokenId);
+        _token.safeTransferFrom(address(this), recipient, _tokenId);
+    }
+
+    /**
+     * @notice Transfers a given `_amount` of an ERC1155 token (defined by the `_token` contract address)
+     * with `_tokenId` to the `recipient` address.
+     * @param recipient The address to receive the recovered ERC1155 token.
+     * @param _token The ERC1155 token contract.
+     * @param _tokenId The ID of the ERC1155 token to transfer.
+     * @param _amount The amount of ERC1155 tokens to transfer.
+     */
+    function recoverERC1155(address recipient, IERC1155 _token, uint256 _tokenId, uint256 _amount) internal {
+        if (_amount == 0) {
+            revert IWithdrawalVault.ZeroAmount();
+        }
+
+        emit IWithdrawalVault.ERC1155Recovered(recipient, msg.sender, address(_token), _tokenId, _amount);
+
+        _token.safeTransferFrom(address(this), recipient, _tokenId, _amount, "");
+    }
+
+    /**
+     * @notice Transfers a batch of ERC1155 tokens (defined by the `_token` contract address)
+     * with `_tokenIds` and corresponding `_amounts` to the `recipient` address.
+     * @param recipient The address to receive the recovered ERC1155 tokens.
+     * @param _token The ERC1155 token contract.
+     * @param _tokenIds The IDs of the ERC1155 tokens to transfer.
+     * @param _amounts The amounts of ERC1155 tokens to transfer.
+     */
+    function recoverBatchERC1155(
+        address recipient,
+        IERC1155 _token,
+        uint256[] calldata _tokenIds,
+        uint256[] calldata _amounts
+    ) internal {
+        if (_tokenIds.length == 0 || _amounts.length == 0) {
+            revert IWithdrawalVault.ZeroAmount();
+        }
+
+        emit IWithdrawalVault.ERC1155BatchRecovered(recipient, msg.sender, address(_token), _tokenIds, _amounts);
+
+        _token.safeBatchTransferFrom(address(this), recipient, _tokenIds, _amounts, "");
     }
 }
