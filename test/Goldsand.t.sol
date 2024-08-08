@@ -603,7 +603,7 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.ETHWithdrawn(OWNER, 4 ether);
+        emit IWithdrawalVault.ETHWithdrawn(address(goldsand), OWNER, 4 ether);
         proxyWithdrawalVault.withdrawETH(address(goldsand), 4 ether);
 
         assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether - 4 ether);
@@ -613,7 +613,7 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.ETHWithdrawn(OWNER, 4 ether);
+        emit IWithdrawalVault.ETHWithdrawn(OWNER, OWNER, 4 ether);
         proxyWithdrawalVault.withdrawETH(OWNER, 4 ether);
 
         assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether - 4 ether - 4 ether);
@@ -623,7 +623,7 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.ETHWithdrawn(OWNER, 4 ether);
+        emit IWithdrawalVault.ETHWithdrawn(USER, OWNER, 4 ether);
         proxyWithdrawalVault.withdrawETH(USER, 4 ether);
 
         assertEq(goldsand.withdrawalVaultAddress().balance, 32 ether - 4 ether - 4 ether - 4 ether);
@@ -680,7 +680,7 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectRevert(IWithdrawalVault.ZeroAmount.selector);
-        proxyWithdrawalVault.recoverERC20(myERC20, 0 ether);
+        proxyWithdrawalVault.recoverERC20(USER, myERC20, 0 ether);
     }
 
     function test_RecoverERC20Succeeds() public {
@@ -694,8 +694,8 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.ERC20Recovered(OWNER, address(myERC20), 0.5 ether);
-        proxyWithdrawalVault.recoverERC20(myERC20, 0.5 ether);
+        emit IWithdrawalVault.ERC20Recovered(USER, OWNER, address(myERC20), 0.5 ether);
+        proxyWithdrawalVault.recoverERC20(USER, myERC20, 0.5 ether);
     }
 
     function test_RecoverERC721() public {
@@ -710,8 +710,8 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit IWithdrawalVault.ERC721Recovered(OWNER, address(myERC721), 1);
-        proxyWithdrawalVault.recoverERC721(myERC721, 1);
+        emit IWithdrawalVault.ERC721Recovered(USER, OWNER, address(myERC721), 1);
+        proxyWithdrawalVault.recoverERC721(USER, myERC721, 1);
 
         assertEq(myERC721.balanceOf(address(goldsand)), 1);
         assertEq(myERC721.balanceOf(goldsand.withdrawalVaultAddress()), 0);

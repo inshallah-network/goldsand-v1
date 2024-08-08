@@ -36,9 +36,9 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
     }
 
     /**
-     * @notice Withdraw `_amount` of ETH to the `recipient` address
-     * @param recipient address to receive the withdrawn ETH
-     * @param _amount amount of ETH to withdraw
+     * @notice Withdraws `_amount` of ETH to the `recipient` address.
+     * @param recipient The address to receive the withdrawn ETH.
+     * @param _amount The amount of ETH to withdraw.
      */
     function withdrawETH(address recipient, uint256 _amount) external onlyOwner {
         if (_amount == 0) {
@@ -50,7 +50,7 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
             revert NotEnoughEther(_amount, balance);
         }
 
-        emit IWithdrawalVault.ETHWithdrawn(msg.sender, _amount);
+        emit IWithdrawalVault.ETHWithdrawn(recipient, msg.sender, _amount);
 
         (bool ethWithdrawalSuccess,) = payable(recipient).call{value: _amount}("");
         if (!ethWithdrawalSuccess) {
@@ -60,30 +60,32 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
 
     /**
      * Transfers a given `_amount` of an ERC20-token (defined by the `_token` contract address)
-     * currently belonging to the burner contract address to the Goldsand treasury address.
+     * to the `recipient` address.
      *
+     * @param recipient The address to receive the recovered ERC20 tokens.
      * @param _token an ERC20-compatible token
      * @param _amount token amount
      */
-    function recoverERC20(IERC20 _token, uint256 _amount) external onlyOwner {
+    function recoverERC20(address recipient, IERC20 _token, uint256 _amount) external onlyOwner {
         if (_amount == 0) {
             revert ZeroAmount();
         }
 
-        emit ERC20Recovered(msg.sender, address(_token), _amount);
+        emit ERC20Recovered(recipient, msg.sender, address(_token), _amount);
 
-        _token.safeTransfer(address(GOLDSAND), _amount);
+        _token.safeTransfer(recipient, _amount);
     }
 
     /**
-     * Transfers a given token_id of an ERC721-compatible NFT (defined by the token contract address)
-     * currently belonging to the burner contract address to the Goldsand treasury address.
+     * Transfers a given `_tokenId` of an ERC721-compatible NFT (defined by the `_token` contract address)
+     * to the `recipient` address.
      *
+     * @param recipient The address to receive the recovered ERC721 NFT.
      * @param _token an ERC721-compatible token
      * @param _tokenId minted token id
      */
-    function recoverERC721(IERC721 _token, uint256 _tokenId) external onlyOwner {
-        emit ERC721Recovered(msg.sender, address(_token), _tokenId);
+    function recoverERC721(address recipient, IERC721 _token, uint256 _tokenId) external onlyOwner {
+        emit ERC721Recovered(recipient, msg.sender, address(_token), _tokenId);
 
         _token.transferFrom(address(this), address(GOLDSAND), _tokenId);
     }
