@@ -119,7 +119,7 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
         revert ERC1155NotAccepted();
     }
 
-    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public pure override(IERC165) returns (bool) {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IWithdrawalVault).interfaceId
             || interfaceId == type(Initializable).interfaceId || interfaceId == type(OwnableUpgradeable).interfaceId
             || interfaceId == type(UUPSUpgradeable).interfaceId || interfaceId == type(IERC1155Receiver).interfaceId;

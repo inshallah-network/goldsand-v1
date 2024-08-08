@@ -30,15 +30,24 @@ import {IGoldsand} from "./interfaces/IGoldsand.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 import {Lib} from "./../src/lib/Lib.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
 import {IERC721} from "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import {IERC1155} from "openzeppelin-contracts-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
+import {IERC1155Receiver} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 /**
  * @title Goldsand
  * @author Asjad Syed
  * @notice Sharia-compliant Ethereum staking for 2B+ Muslims around the world
  */
-contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, PausableUpgradeable, UUPSUpgradeable {
+contract Goldsand is
+    IGoldsand,
+    Initializable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable,
+    IERC1155Receiver
+{
     /**
      * @notice Mapping of funder addresses to their balances.
      * @dev The keys are addresses of funders from the funders array.
@@ -290,6 +299,38 @@ contract Goldsand is IGoldsand, Initializable, AccessControlUpgradeable, Pausabl
         uint256[] calldata _amounts
     ) external onlyRole(OPERATOR_ROLE) {
         return Lib.recoverBatchERC1155(recipient, _token, _tokenIds, _amounts);
+    }
+
+    function onERC1155Received(
+        address, // operator
+        address, // from
+        uint256, // id
+        uint256, // value
+        bytes calldata // data
+    ) external pure override returns (bytes4) {
+        revert IWithdrawalVault.ERC1155NotAccepted();
+    }
+
+    function onERC1155BatchReceived(
+        address, // operator,
+        address, // from,
+        uint256[] calldata, // ids,
+        uint256[] calldata, // values,
+        bytes calldata // data
+    ) external pure override returns (bytes4) {
+        revert IWithdrawalVault.ERC1155NotAccepted();
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        pure
+        override(IERC165, AccessControlUpgradeable)
+        returns (bool)
+    {
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IGoldsand).interfaceId
+            || interfaceId == type(Initializable).interfaceId || interfaceId == type(AccessControlUpgradeable).interfaceId
+            || interfaceId == type(PausableUpgradeable).interfaceId || interfaceId == type(UUPSUpgradeable).interfaceId
+            || interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
     /**

@@ -899,6 +899,40 @@ contract GoldsandTest is Test {
         assertEq(myERC1155.balanceOf(USER, ids[2]), values[2]);
     }
 
+    function test_MintERC1155GoldsandNotAccepted() public {
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(USER);
+        vm.expectRevert(IWithdrawalVault.ERC1155NotAccepted.selector);
+        myERC1155.mint(address(goldsand), 1, 2 ether, "");
+
+        assertEq(myERC1155.balanceOf(address(goldsand), 1), 0 ether);
+    }
+
+    function test_RecoverERC1155GoldsandSucceeds() public {
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(USER);
+        myERC1155.mint(USER, 1, 2 ether, "");
+
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = uint256(1);
+        uint256[] memory values = new uint256[](1);
+        values[0] = uint256(2 ether);
+
+        vm.prank(USER);
+        myERC1155.update(USER, address(goldsand), ids, values);
+
+        assertEq(myERC1155.balanceOf(address(goldsand), 1), 2 ether);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit IWithdrawalVault.ERC1155Recovered(USER, OPERATOR, address(myERC1155), 1, 2 ether);
+        goldsand.recoverERC1155(USER, myERC1155, 1, 2 ether);
+
+        assertEq(myERC1155.balanceOf(USER, 1), 2 ether);
+    }
+
     function testWithdrawalVaultReceive() public {
         vm.deal(USER, USER_STARTING_BALANCE);
 
