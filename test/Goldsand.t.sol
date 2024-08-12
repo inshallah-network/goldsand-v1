@@ -195,14 +195,14 @@ contract GoldsandTest is Test {
 
         vm.prank(USER);
         vm.expectEmit(true, true, true, true);
-        emit Funded(USER, 67 ether);
         emit IDepositContract.DepositEvent({
-            pubkey: depositData1.pubkey,
-            withdrawal_credentials: depositData1.withdrawalCredentials,
+            pubkey: depositData3.pubkey,
+            withdrawal_credentials: depositData3.withdrawalCredentials,
             amount: Lib.to_little_endian_64(32 gwei),
-            signature: depositData1.signature,
+            signature: depositData3.signature,
             index: Lib.to_little_endian_64(0)
         });
+        vm.expectEmit(true, true, true, true);
         emit IDepositContract.DepositEvent({
             pubkey: depositData2.pubkey,
             withdrawal_credentials: depositData2.withdrawalCredentials,
@@ -210,18 +210,20 @@ contract GoldsandTest is Test {
             signature: depositData2.signature,
             index: Lib.to_little_endian_64(1)
         });
+        vm.expectEmit(true, true, true, true);
+        emit Funded(USER, 67 ether);
         goldsand.fund{value: 67 ether}();
 
         vm.prank(USER);
-        vm.expectEmit(true, true, true, true);
-        emit Funded(USER, 35 ether);
         emit IDepositContract.DepositEvent({
-            pubkey: depositData3.pubkey,
-            withdrawal_credentials: depositData3.withdrawalCredentials,
+            pubkey: depositData1.pubkey,
+            withdrawal_credentials: depositData1.withdrawalCredentials,
             amount: Lib.to_little_endian_64(32 gwei),
-            signature: depositData3.signature,
+            signature: depositData1.signature,
             index: Lib.to_little_endian_64(2)
         });
+        vm.expectEmit(true, true, true, true);
+        emit Funded(USER, 35 ether);
         goldsand.fund{value: 35 ether}();
     }
 
@@ -235,7 +237,6 @@ contract GoldsandTest is Test {
 
         vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
-        emit DepositDataAdded(depositData1);
         emit IDepositContract.DepositEvent({
             pubkey: depositData1.pubkey,
             withdrawal_credentials: depositData1.withdrawalCredentials,
@@ -243,11 +244,12 @@ contract GoldsandTest is Test {
             signature: depositData1.signature,
             index: Lib.to_little_endian_64(0)
         });
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData1);
         goldsand.addDepositData(depositData1);
 
         vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
-        emit DepositDataAdded(depositData2);
         emit IDepositContract.DepositEvent({
             pubkey: depositData2.pubkey,
             withdrawal_credentials: depositData2.withdrawalCredentials,
@@ -255,11 +257,12 @@ contract GoldsandTest is Test {
             signature: depositData2.signature,
             index: Lib.to_little_endian_64(1)
         });
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData2);
         goldsand.addDepositData(depositData2);
 
         vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
-        emit DepositDataAdded(depositData3);
         emit IDepositContract.DepositEvent({
             pubkey: depositData3.pubkey,
             withdrawal_credentials: depositData3.withdrawalCredentials,
@@ -267,6 +270,8 @@ contract GoldsandTest is Test {
             signature: depositData3.signature,
             index: Lib.to_little_endian_64(2)
         });
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData3);
         goldsand.addDepositData(depositData3);
     }
 
@@ -286,10 +291,6 @@ contract GoldsandTest is Test {
 
         vm.prank(OPERATOR);
         vm.expectEmit(true, true, true, true);
-        emit DepositDataAdded(depositData1);
-        emit DepositDataAdded(depositData2);
-        emit DepositDataAdded(depositData3);
-        emit DepositDataAdded(depositData4);
         emit IDepositContract.DepositEvent({
             pubkey: depositData1.pubkey,
             withdrawal_credentials: depositData1.withdrawalCredentials,
@@ -297,6 +298,9 @@ contract GoldsandTest is Test {
             signature: depositData1.signature,
             index: Lib.to_little_endian_64(0)
         });
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData1);
+        vm.expectEmit(true, true, true, true);
         emit IDepositContract.DepositEvent({
             pubkey: depositData2.pubkey,
             withdrawal_credentials: depositData2.withdrawalCredentials,
@@ -304,6 +308,9 @@ contract GoldsandTest is Test {
             signature: depositData2.signature,
             index: Lib.to_little_endian_64(1)
         });
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData2);
+        vm.expectEmit(true, true, true, true);
         emit IDepositContract.DepositEvent({
             pubkey: depositData3.pubkey,
             withdrawal_credentials: depositData3.withdrawalCredentials,
@@ -311,6 +318,9 @@ contract GoldsandTest is Test {
             signature: depositData3.signature,
             index: Lib.to_little_endian_64(2)
         });
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData3);
+        vm.expectEmit(true, true, true, true);
         emit IDepositContract.DepositEvent({
             pubkey: depositData4.pubkey,
             withdrawal_credentials: depositData4.withdrawalCredentials,
@@ -318,6 +328,8 @@ contract GoldsandTest is Test {
             signature: depositData4.signature,
             index: Lib.to_little_endian_64(3)
         });
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData4);
         goldsand.addDepositDatas(depositDatas);
     }
 
@@ -410,7 +422,6 @@ contract GoldsandTest is Test {
         vm.prank(EMERGENCY);
         vm.expectEmit(true, true, true, true);
         emit IWithdrawalVault.ETHWithdrawn(EMERGENCY, EMERGENCY, 123 ether);
-        emit IWithdrawalVault.ETHWithdrawn(EMERGENCY, EMERGENCY, 111 ether);
         goldsand.emergencyWithdraw();
 
         vm.recordLogs();
@@ -459,12 +470,12 @@ contract GoldsandTest is Test {
         Goldsand _goldsand = new Goldsand();
 
         vm.expectRevert(Initializable.InvalidInitialization.selector);
-        _goldsand.initialize(payable(address(0)));
+        _goldsand.initialize(payable(address(0)), payable(address(0)));
     }
 
     function test_Upgrade() public {
         UpgradeGoldsand upgrade = new UpgradeGoldsand();
-        upgrade.setMostRecentlyDeployedProxy(payable(address(goldsand)));
+        upgrade.setProxyGoldsandAddress(payable(address(goldsand)));
 
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(2 ** 64 - 1);
@@ -542,7 +553,7 @@ contract GoldsandTest is Test {
         assertEq(goldsand.getDepositDatasLength(), 1);
 
         UpgradeGoldsand upgrade = new UpgradeGoldsand();
-        upgrade.setMostRecentlyDeployedProxy(payable(address(goldsand)));
+        upgrade.setProxyGoldsandAddress(payable(address(goldsand)));
 
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(2 ** 64 - 1);
@@ -692,25 +703,6 @@ contract GoldsandTest is Test {
         assertEq(address(goldsand).balance, 4 ether);
         assertEq(OWNER.balance, OWNER_STARTING_BALANCE + 4 ether);
         assertEq(USER.balance, USER_STARTING_BALANCE + 4 ether);
-    }
-
-    function test_SetWithdrawalVaultZeroAddress() public {
-        vm.deal(USER, USER_STARTING_BALANCE);
-
-        vm.prank(UPGRADER);
-        vm.expectRevert(WithdrawalVaultZeroAddress.selector);
-        goldsand.setWithdrawalVaultAddress(payable(address(0)));
-    }
-
-    function test_SetWithdrawalVaultTransfers() public {
-        vm.deal(USER, USER_STARTING_BALANCE);
-
-        WithdrawalVault withdrawalVault = new WithdrawalVault();
-
-        vm.prank(UPGRADER);
-        vm.expectEmit(true, true, true, true);
-        emit WithdrawalVaultSet(withdrawalVault);
-        goldsand.setWithdrawalVaultAddress(payable(address(withdrawalVault)));
     }
 
     function test_WithdrawalVaultBalance() public {

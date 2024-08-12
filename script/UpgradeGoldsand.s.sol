@@ -15,16 +15,16 @@ import {ERC1967Proxy} from
     "openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract UpgradeGoldsand is Script {
-    address payable mostRecentlyDeployedProxy = payable(address(0x22b935fe868Ca243a7ab21B4B26aEd2288784540));
+    address payable proxyGoldsandAddress = payable(address(0x22b935fe868Ca243a7ab21B4B26aEd2288784540));
 
-    function setMostRecentlyDeployedProxy(address payable proxyAddress) public {
-        mostRecentlyDeployedProxy = proxyAddress;
+    function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
+        proxyGoldsandAddress = _proxyGoldsandAddress;
     }
 
     function run() external {
         vm.startBroadcast();
 
-        // 1. Determine the deposit contract address based on the network
+        // Determine the deposit contract address based on the network
         address payable depositContractAddress;
         if (block.chainid == 1) {
             depositContractAddress = MAINNET_DEPOSIT_CONTRACT_ADDRESS;
@@ -36,25 +36,25 @@ contract UpgradeGoldsand is Script {
             revert("Unknown network");
         }
 
-        // 2. Deploy the Goldsand implementation contract
+        // Deploy the Goldsand implementation contract
         Goldsand newGoldsandImpl = new Goldsand();
 
-        // 3. Deploy the WithdrawalVault implementation contract
+        // Deploy the WithdrawalVault implementation contract
         WithdrawalVault newWithdrawalVaultImpl = new WithdrawalVault();
 
         vm.stopBroadcast();
 
-        // 4. Upgrade the Goldsand implementation contract
-        upgradeAddress(mostRecentlyDeployedProxy, address(newGoldsandImpl), address(newWithdrawalVaultImpl));
+        // Upgrade the Goldsand implementation contract
+        upgradeAddress(proxyGoldsandAddress, address(newGoldsandImpl), address(newWithdrawalVaultImpl));
     }
 
     function upgradeAddress(
-        address payable proxyGoldsandAddress,
+        address payable _proxyGoldsandAddress,
         address newGoldsandImplAddress,
         address newWithdrawalVaultImplAddress
     ) public {
         vm.startBroadcast();
-        Goldsand proxyGoldsand = Goldsand(proxyGoldsandAddress);
+        Goldsand proxyGoldsand = Goldsand(_proxyGoldsandAddress);
         address payable proxyWithdrawalVaultAddress = proxyGoldsand.withdrawalVaultAddress();
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyWithdrawalVaultAddress);
         proxyGoldsand.grantRole(UPGRADER_ROLE, tx.origin);

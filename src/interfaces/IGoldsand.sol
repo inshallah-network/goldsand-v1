@@ -58,13 +58,11 @@ address payable constant ANVIL_DEPOSIT_CONTRACT_ADDRESS = payable(0x00000000219a
 interface IGoldsand {
     function getDepositDatasLength() external view returns (uint256);
 
-    function initialize(address payable depositContractAddress) external;
+    function initialize(address payable depositContractAddress, address payable withdrawalVaultAddress) external;
 
     fallback() external payable;
 
     receive() external payable;
-
-    function setWithdrawalVaultAddress(address payable withdrawalVaultAddress) external;
 
     function setMinEthDeposit(uint256 _minEthDeposit) external;
 

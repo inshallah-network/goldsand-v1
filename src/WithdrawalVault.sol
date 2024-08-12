@@ -17,8 +17,6 @@ import {Lib} from "./lib/Lib.sol";
 contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable, UUPSUpgradeable, IERC1155Receiver {
     using SafeERC20 for IERC20;
 
-    IGoldsand public GOLDSAND;
-
     /**
      * @dev Constructor that disables the initializers to prevent
      * reinitialization during upgrades.
@@ -28,15 +26,13 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
     }
 
     /**
-     * @notice Initializes the contract with the Goldsand address.
+     * @notice Initializes the contract.
      * @dev The initialize function supplants the constructor in upgradeable
      * contracts to separate deployment from initialization, enabling upgrades
      * without reinitialization.
-     * @param goldsandAddress The address of the Goldsand contract.
      */
-    function initialize(address payable goldsandAddress) public initializer {
+    function initialize() public initializer {
         __Ownable_init(msg.sender);
-        GOLDSAND = IGoldsand(goldsandAddress);
     }
 
     /**

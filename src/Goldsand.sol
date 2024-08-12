@@ -50,7 +50,6 @@ contract Goldsand is
 {
     /**
      * @notice Mapping of funder addresses to their balances.
-     * @dev The keys are addresses of funders from the funders array.
      */
     mapping(address funder => uint256 balance) public funderToBalance;
 
@@ -101,18 +100,23 @@ contract Goldsand is
     }
 
     /**
-     * @notice Initializes the contract with the deposit contract address.
+     * @notice Initializes the contract.
      * @dev The initialize function supplants the constructor in upgradeable
      * contracts to separate deployment from initialization, enabling upgrades
      * without reinitialization.
      * @param _depositContractAddress The address of the deposit contract.
+     * @param _withdrawalVaultAddress The address of the withdrawal vault.
      */
-    function initialize(address payable _depositContractAddress) public initializer {
+    function initialize(address payable _depositContractAddress, address payable _withdrawalVaultAddress)
+        public
+        initializer
+    {
         __AccessControl_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         depositContractAddress = _depositContractAddress;
+        withdrawalVaultAddress = _withdrawalVaultAddress;
         minEthDeposit = 0.05 ether;
     }
 
@@ -130,19 +134,6 @@ contract Goldsand is
      */
     receive() external payable whenNotPaused {
         fund();
-    }
-
-    /**
-     * @notice Sets the address of the withdrawal vault contract.
-     * @param _withdrawalVaultAddress The address of the withdrawal vault contract.
-     */
-    function setWithdrawalVaultAddress(address payable _withdrawalVaultAddress) external onlyRole(UPGRADER_ROLE) {
-        if (_withdrawalVaultAddress == address(0)) {
-            revert WithdrawalVaultZeroAddress();
-        }
-
-        withdrawalVaultAddress = _withdrawalVaultAddress;
-        emit WithdrawalVaultSet(IWithdrawalVault(withdrawalVaultAddress));
     }
 
     /**
@@ -337,7 +328,6 @@ contract Goldsand is
      * @notice Emergency function: Withdraw all funds from the contract.
      */
     function emergencyWithdraw() external onlyRole(EMERGENCY_ROLE) whenPaused {
-        try IWithdrawalVault(withdrawalVaultAddress).withdrawETH(msg.sender, withdrawalVaultAddress.balance) {} catch {}
         uint256 balance = address(this).balance;
         if (balance > 0) {
             Lib.withdrawETH(msg.sender, balance);

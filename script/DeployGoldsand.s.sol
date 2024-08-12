@@ -19,7 +19,7 @@ contract DeployGoldsand is Script {
     function deploy() public returns (Goldsand) {
         vm.startBroadcast();
 
-        // 1. Determine the deposit contract address based on the network
+        // Determine the deposit contract address based on the network
         address payable depositContractAddress;
         if (block.chainid == 1) {
             depositContractAddress = MAINNET_DEPOSIT_CONTRACT_ADDRESS;
@@ -33,32 +33,27 @@ contract DeployGoldsand is Script {
             revert("Unknown network");
         }
 
-        // 2. Deploy the Goldsand implementation contract
-        Goldsand newGoldsandImpl = new Goldsand();
-
-        // 3. Deploy the WithdrawalVault implementation contract
+        // Deploy the WithdrawalVault implementation contract
         WithdrawalVault newWithdrawalVaultImpl = new WithdrawalVault();
 
-        // 4. Deploy an ERC1967Proxy with the Goldsand implementation contract and initialize it with the deposit contract address
-        ERC1967Proxy proxyGoldsandERC1967 =
-            new ERC1967Proxy(address(newGoldsandImpl), abi.encodeCall(Goldsand.initialize, (depositContractAddress)));
-        Goldsand proxyGoldsand = Goldsand(payable(address(proxyGoldsandERC1967)));
-
-        // 5. Deploy an ERC1967Proxy with the WithdrawalVault implementation contract and initialize it with the proxy Goldsand contract address
-        ERC1967Proxy proxyWithdrawalVaultERC1967 = new ERC1967Proxy(
-            address(newWithdrawalVaultImpl),
-            abi.encodeCall(WithdrawalVault.initialize, (payable(address(proxyGoldsand))))
-        );
+        // Deploy an ERC1967Proxy with the WithdrawalVault implementation contract and initialize it
+        ERC1967Proxy proxyWithdrawalVaultERC1967 =
+            new ERC1967Proxy(address(newWithdrawalVaultImpl), abi.encodeCall(WithdrawalVault.initialize, ()));
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(payable(address(proxyWithdrawalVaultERC1967)));
 
-        // 6. Set the WithdrawalVault's address in the Goldsand contract
-        address payable withdrawalVaultAddress = payable(address(proxyWithdrawalVault));
-        proxyGoldsand.grantRole(UPGRADER_ROLE, tx.origin);
-        proxyGoldsand.setWithdrawalVaultAddress(withdrawalVaultAddress);
-        proxyGoldsand.renounceRole(UPGRADER_ROLE, tx.origin);
-
-        // 7. Give the deployer ownership of the WithdrawalVault
+        // Give the deployer ownership of the WithdrawalVault
         proxyWithdrawalVault.transferOwnership(tx.origin);
+
+        // Deploy the Goldsand implementation contract
+        Goldsand newGoldsandImpl = new Goldsand();
+
+        // Deploy an ERC1967Proxy with the Goldsand implementation contract and initialize it
+        address payable withdrawalVaultAddress = payable(address(proxyWithdrawalVault));
+        ERC1967Proxy proxyGoldsandERC1967 = new ERC1967Proxy(
+            address(newGoldsandImpl),
+            abi.encodeCall(Goldsand.initialize, (depositContractAddress, withdrawalVaultAddress))
+        );
+        Goldsand proxyGoldsand = Goldsand(payable(address(proxyGoldsandERC1967)));
 
         vm.stopBroadcast();
         return proxyGoldsand;
