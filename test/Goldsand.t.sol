@@ -7,14 +7,12 @@ import {
     DepositDataAdded,
     Funded,
     MinEthDepositSet,
-    WithdrawalVaultSet,
     DuplicateDepositDataDetected,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
     InvalidSignatureLength,
     InvalidDepositDataRoot,
     TooSmallDeposit,
-    WithdrawalVaultZeroAddress,
     EMERGENCY_ROLE,
     GOVERNANCE_ROLE,
     OPERATOR_ROLE,
@@ -145,7 +143,7 @@ contract GoldsandTest is Test {
         hex"1234",
         0x38a9e452483b66f8f67a244903233af736fc9d887692bc4c19c7073748e9469f
     );
-    DepositData depositDataWithInvalidDataRoot = DepositData(
+    DepositData depositDataWithInvalidDepositDataRoot = DepositData(
         hex"88748ac190b3f35ad54ca76aed3840dc9772598226d38119ba8c9af23ed5a95fa26a882ce501acb232401c7e18db83e5",
         hex"0063300fe1391b913e83a9e4e57a3e8de8f0677d5fde2dd09808135583a67362",
         hex"998a046b295638d7753ca44ddfab9d3eaf81c309f7492df1f4070321ace89f5448a180e5722fe77c3106e779f478acc704572210f96842531b0b0a6fe303c23b85af189c1a1431cd248d693e9574d66dc1b062e42dd0eb5e0bb810c971d6b537",
@@ -375,7 +373,7 @@ contract GoldsandTest is Test {
 
         vm.prank(OPERATOR);
         vm.expectRevert(InvalidDepositDataRoot.selector);
-        goldsand.addDepositData(depositDataWithInvalidDataRoot);
+        goldsand.addDepositData(depositDataWithInvalidDepositDataRoot);
     }
 
     function test_EmergencyWithdrawSucceeds() public {
