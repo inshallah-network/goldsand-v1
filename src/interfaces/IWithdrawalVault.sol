@@ -10,37 +10,40 @@ interface IWithdrawalVault {
     // Events
 
     /**
+     * Emitted when `amount` of ETH is received from the `sender`.
+     */
+    event ETHReceived(uint256 amount, address sender);
+
+    /**
      * Emitted when `amount` of ETH is withdrawn
      * to the `recipient` address by `requestedBy` sender.
      */
-    event ETHWithdrawn(address recipient, address indexed requestedBy, uint256 amount);
+    event ETHWithdrawn(address recipient, address requestedBy, uint256 amount);
 
     /**
      * Emitted when `amount` of ERC20 `token` is recovered (i.e. transferred)
      * to the `recipient` address by `requestedBy` sender.
      */
-    event ERC20Recovered(address recipient, address indexed requestedBy, address indexed token, uint256 amount);
+    event ERC20Recovered(address recipient, address requestedBy, address token, uint256 amount);
 
     /**
      * Emitted when the ERC721 `token`  with `tokenId` is recovered (i.e. transferred)
      * to the `recipient` address by `requestedBy` sender.
      */
-    event ERC721Recovered(address recipient, address indexed requestedBy, address indexed token, uint256 tokenId);
+    event ERC721Recovered(address recipient, address requestedBy, address token, uint256 tokenId);
 
     /**
      * Emitted when `amount` of ERC1155 `token` with `tokenId` is recovered (i.e. transferred)
      * to the `recipient` address by `requestedBy` sender.
      */
-    event ERC1155Recovered(
-        address recipient, address indexed requestedBy, address indexed token, uint256 tokenId, uint256 amount
-    );
+    event ERC1155Recovered(address recipient, address requestedBy, address token, uint256 tokenId, uint256 amount);
 
     /**
      * Emitted when a batch of ERC1155 `token` with `tokenIds` and corresponding `amounts` is recovered (i.e. transferred)
      * to the `recipient` address by `requestedBy` sender.
      */
     event ERC1155BatchRecovered(
-        address recipient, address indexed requestedBy, address indexed token, uint256[] tokenIds, uint256[] amounts
+        address recipient, address requestedBy, address token, uint256[] tokenIds, uint256[] amounts
     );
 
     // Errors

@@ -930,12 +930,4 @@ contract GoldsandTest is Test {
         (bool receiveSuccess,) = address(goldsand.withdrawalVaultAddress()).call{value: 1 ether}("");
         assert(receiveSuccess);
     }
-
-    function testWithdrawalVaultFallback() public {
-        vm.deal(USER, USER_STARTING_BALANCE);
-
-        vm.prank(USER);
-        (bool fallbackSuccess,) = address(goldsand.withdrawalVaultAddress()).call{value: 1 ether}("0x12345678");
-        assert(fallbackSuccess);
-    }
 }

@@ -20,6 +20,7 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
     /**
      * @dev Constructor that disables the initializers to prevent
      * reinitialization during upgrades.
+     * @custom:oz-upgrades-unsafe-allow constructor
      */
     constructor() {
         _disableInitializers();
@@ -124,12 +125,9 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
     /**
      * @notice Function to receive ETH
      */
-    receive() external payable {}
-
-    /**
-     * @notice Fallback function to receive ETH
-     */
-    fallback() external payable {}
+    receive() external payable {
+        emit ETHReceived(msg.value, msg.sender);
+    }
 
     /**
      * @notice Authorizes an upgrade of the contract.

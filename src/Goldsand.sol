@@ -92,6 +92,7 @@ contract Goldsand is
     /**
      * @dev Constructor that disables the initializers to prevent
      * reinitialization during upgrades.
+     * @custom:oz-upgrades-unsafe-allow constructor
      */
     constructor() {
         _disableInitializers();

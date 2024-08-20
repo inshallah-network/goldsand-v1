@@ -5,8 +5,14 @@ libs = ["lib"]
 remappings = [
     "openzeppelin-contracts/=lib/openzeppelin-contracts/",
     "openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/",
+    "openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades/"
 ]
 optimizer = true
 optimize_runs = 200
+# Needed for OpenZeppelin Upgrades Plugins https://docs.openzeppelin.com/upgrades-plugins/1.x/foundry-upgrades#before_running
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
