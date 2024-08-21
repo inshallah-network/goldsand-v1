@@ -31,9 +31,10 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
      * @dev The initialize function supplants the constructor in upgradeable
      * contracts to separate deployment from initialization, enabling upgrades
      * without reinitialization.
+     * @param initialOwner The address of the initial owner of the contract.
      */
-    function initialize() public initializer {
-        __Ownable_init(msg.sender);
+    function initialize(address initialOwner) public initializer {
+        __Ownable_init(initialOwner);
     }
 
     /**

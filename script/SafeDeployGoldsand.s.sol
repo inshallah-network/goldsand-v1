@@ -14,10 +14,11 @@ import {WithdrawalVault} from "./../src/WithdrawalVault.sol";
 import {Upgrades, Options} from "openzeppelin-foundry-upgrades/src/Upgrades.sol";
 import {Defender, ApprovalProcessResponse} from "openzeppelin-foundry-upgrades/src/Defender.sol";
 
-contract ValidateDeployGoldsand is Script {
+contract SafeDeployGoldsand is Script {
     function deploy() public returns (Goldsand) {
         vm.startBroadcast();
 
+        address withdrawalVaultOwner = 0xf79639951b6d75cDfBce75d019DaDbaC437fe8f3;
         ApprovalProcessResponse memory upgradeApprovalProcess = Defender.getUpgradeApprovalProcess();
 
         if (upgradeApprovalProcess.via == address(0)) {
@@ -52,10 +53,12 @@ contract ValidateDeployGoldsand is Script {
             revert("Unknown network");
         }
 
-        address payable proxyWithdrawalVaultAddress =
-            payable(Upgrades.deployUUPSProxy("WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, ()), opts));
-        WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyWithdrawalVaultAddress);
-        proxyWithdrawalVault.transferOwnership(tx.origin);
+        address payable proxyWithdrawalVaultAddress = payable(
+            Upgrades.deployUUPSProxy(
+                "WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, (withdrawalVaultOwner)), opts
+            )
+        );
+
         address payable proxyGoldsandAddress = payable(
             Upgrades.deployUUPSProxy(
                 "Goldsand.sol",

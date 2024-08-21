@@ -30,10 +30,10 @@ contract ValidateDeployGoldsand is Script {
             revert("Unknown network");
         }
 
-        address payable proxyWithdrawalVaultAddress =
-            payable(Upgrades.deployUUPSProxy("WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, ())));
-        WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyWithdrawalVaultAddress);
-        proxyWithdrawalVault.transferOwnership(tx.origin);
+        address payable proxyWithdrawalVaultAddress = payable(
+            Upgrades.deployUUPSProxy("WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, (tx.origin)))
+        );
+
         address payable proxyGoldsandAddress = payable(
             Upgrades.deployUUPSProxy(
                 "Goldsand.sol",

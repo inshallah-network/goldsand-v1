@@ -38,7 +38,7 @@ contract DeployGoldsand is Script {
 
         // Deploy an ERC1967Proxy with the WithdrawalVault implementation contract and initialize it
         ERC1967Proxy proxyWithdrawalVaultERC1967 =
-            new ERC1967Proxy(address(newWithdrawalVaultImpl), abi.encodeCall(WithdrawalVault.initialize, ()));
+            new ERC1967Proxy(address(newWithdrawalVaultImpl), abi.encodeCall(WithdrawalVault.initialize, (tx.origin)));
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(payable(address(proxyWithdrawalVaultERC1967)));
 
         // Give the deployer ownership of the WithdrawalVault
