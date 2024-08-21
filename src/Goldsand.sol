@@ -12,6 +12,7 @@ import {
     DepositData,
     DepositDataAdded,
     Funded,
+    ExternalFunded,
     MinEthDepositSet,
     DuplicateDepositDataDetected,
     InvalidPubkeyLength,
@@ -19,6 +20,7 @@ import {
     InvalidSignatureLength,
     InvalidDepositDataRoot,
     TooSmallDeposit,
+    InvalidFunderAddress,
     EMERGENCY_ROLE,
     GOVERNANCE_ROLE,
     OPERATOR_ROLE,
@@ -158,6 +160,21 @@ contract Goldsand is
         funderToBalance[msg.sender] += msg.value;
         depositFundsIfPossible();
         emit Funded(msg.sender, msg.value);
+    }
+
+    /**
+     * @notice Deposits funds into the contract but assigns the funds to
+     * another account. This function can only be used by Goldsand.
+     * @dev If we've accumulated >32 ETH and have deposit datas, we'll call
+     * the deposit contract as well.
+     */
+    function externalFund(address _funderAccount) public payable onlyRole(OPERATOR_ROLE) whenNotPaused {
+        if (_funderAccount == address(0)) {
+            revert InvalidFunderAddress();
+        }
+        funderToBalance[_funderAccount] += msg.value;
+        depositFundsIfPossible();
+        emit ExternalFunded(msg.sender, _funderAccount, msg.value);
     }
 
     /**

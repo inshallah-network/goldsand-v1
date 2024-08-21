@@ -17,6 +17,8 @@ event DepositDataAdded(DepositData depositData);
 
 event Funded(address funder, uint256 amount);
 
+event ExternalFunded(address funder, address funderAccountAddress, uint256 amount);
+
 event MinEthDepositSet(uint256 amount);
 
 // DepositContract.deposit(...) emits IDepositContract.DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index);
@@ -36,6 +38,8 @@ error InvalidSignatureLength();
 error InvalidDepositDataRoot();
 
 error TooSmallDeposit();
+
+error InvalidFunderAddress();
 
 bytes32 constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE"); // 0xbf233dd2aafeb4d50879c4aa5c81e96d92f6e6945c906a58f9f2d1c1631b4b26
 

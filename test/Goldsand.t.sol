@@ -6,12 +6,14 @@ import {
     DepositData,
     DepositDataAdded,
     Funded,
+    ExternalFunded,
     MinEthDepositSet,
     DuplicateDepositDataDetected,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
     InvalidSignatureLength,
     InvalidDepositDataRoot,
+    InvalidFunderAddress,
     TooSmallDeposit,
     EMERGENCY_ROLE,
     GOVERNANCE_ROLE,
@@ -100,6 +102,7 @@ contract GoldsandTest is Test {
     address immutable UPGRADER = makeAddr("UPGRADER"); // 0x8B1D4B40080A998c21c5175fC6f0dd531Fe2Cb5E
     uint256 constant OWNER_STARTING_BALANCE = 0 ether;
     uint256 constant USER_STARTING_BALANCE = 256 ether;
+    uint256 constant OPERATOR_STARTING_BALANCE = 256 ether;
 
     DepositData depositData1 = DepositData(
         hex"a62a1f785056741b19997a0009e15f3bd7c49e5957daa7dfee944554475baa5070248515cac5c092d69704267cdc3bcf",
@@ -354,6 +357,99 @@ contract GoldsandTest is Test {
             }
             goldsand.fund{value: 0.5 ether}();
         }
+    }
+
+    function test_PartialExternalFundAccount() public {
+        vm.deal(OPERATOR, OPERATOR_STARTING_BALANCE);
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData1);
+        goldsand.addDepositData(depositData1);
+
+        for (uint256 i = 0; i < 64; ++i) {
+            vm.prank(OPERATOR);
+            vm.expectEmit(true, true, true, true);
+            emit ExternalFunded(OPERATOR, USER, 0.5 ether);
+            if (i == 64 - 1) {
+                emit IDepositContract.DepositEvent({
+                    pubkey: depositData1.pubkey,
+                    withdrawal_credentials: depositData1.withdrawalCredentials,
+                    amount: Lib.to_little_endian_64(32 gwei),
+                    signature: depositData1.signature,
+                    index: Lib.to_little_endian_64(0)
+                });
+            }
+            goldsand.externalFund{value: 0.5 ether}(USER);
+        }
+    }
+
+    function test_AddAndExternalFundAccount() public {
+        vm.deal(OPERATOR, OPERATOR_STARTING_BALANCE);
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData1);
+        goldsand.addDepositData(depositData1);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData2);
+        goldsand.addDepositData(depositData2);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit DepositDataAdded(depositData3);
+        goldsand.addDepositData(depositData3);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit ExternalFunded(OPERATOR, USER, 3 ether);
+        goldsand.externalFund{value: 3 ether}(USER);
+
+        vm.prank(OPERATOR);
+        vm.expectEmit(true, true, true, true);
+        emit IDepositContract.DepositEvent({
+            pubkey: depositData3.pubkey,
+            withdrawal_credentials: depositData3.withdrawalCredentials,
+            amount: Lib.to_little_endian_64(32 gwei),
+            signature: depositData3.signature,
+            index: Lib.to_little_endian_64(0)
+        });
+        vm.expectEmit(true, true, true, true);
+        emit IDepositContract.DepositEvent({
+            pubkey: depositData2.pubkey,
+            withdrawal_credentials: depositData2.withdrawalCredentials,
+            amount: Lib.to_little_endian_64(32 gwei),
+            signature: depositData2.signature,
+            index: Lib.to_little_endian_64(1)
+        });
+        vm.expectEmit(true, true, true, true);
+        emit ExternalFunded(OPERATOR, USER, 67 ether);
+        goldsand.externalFund{value: 67 ether}(USER);
+
+        vm.prank(OPERATOR);
+        emit IDepositContract.DepositEvent({
+            pubkey: depositData1.pubkey,
+            withdrawal_credentials: depositData1.withdrawalCredentials,
+            amount: Lib.to_little_endian_64(32 gwei),
+            signature: depositData1.signature,
+            index: Lib.to_little_endian_64(2)
+        });
+        vm.expectEmit(true, true, true, true);
+        emit ExternalFunded(OPERATOR, USER, 35 ether);
+        goldsand.externalFund{value: 35 ether}(USER);
+    }
+
+    function test_ExternalFundAccount_RevertsIfFunderIsZeroAddress() public {
+        vm.deal(OPERATOR, OPERATOR_STARTING_BALANCE);
+        vm.deal(USER, USER_STARTING_BALANCE);
+
+        vm.prank(OPERATOR);
+        vm.expectRevert(InvalidFunderAddress.selector);
+        goldsand.externalFund{value: 1 ether}(address(0));
     }
 
     function test_InvalidAddDepositData() public {
