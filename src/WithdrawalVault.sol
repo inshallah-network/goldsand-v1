@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2023 Lido <info@lido.fi>
+// SPDX-FileCopyrightText: 2024 InshAllah Network <info@inshallah.network>
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.24;
 

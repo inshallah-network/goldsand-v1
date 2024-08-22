@@ -1,4 +1,28 @@
-// SPDX-License-Identifier: UNLICENSED
+/*
+ .d8888b.           888      888                                 888 
+d88P  Y88b          888      888                                 888 
+888    888          888      888                                 888 
+888         .d88b.  888  .d88888 .d8888b   8888b.  88888b.   .d88888 
+888  88888 d88""88b 888 d88" 888 88K          "88b 888 "88b d88" 888 
+888    888 888  888 888 888  888 "Y8888b. .d888888 888  888 888  888 
+Y88b  d88P Y88..88P 888 Y88b 888      X88 888  888 888  888 Y88b 888 
+ "Y8888P88  "Y88P"  888  "Y88888  88888P' "Y888888 888  888  "Y88888 
+
+
+a project by InshAllah Network to enable staking for 2B+ users around
+the world.
+
+a special thanks to:
+
+- Imran Khan of Alliance for constant encouragement and inspiration.
+- The entire InshAllah Network team for bringing this product to life.
+- Most of all, God. This would not be possible without His Grace.
+
+Bismillah...
+*/
+
+// SPDX-FileCopyrightText: 2024 InshAllah Network <info@inshallah.network>
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.24;
 
 import {IDepositContract} from "./interfaces/IDepositContract.sol";

@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-FileCopyrightText: 2024 InshAllah Network <info@inshallah.network>
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.24;
 
 import {Script} from "forge-std/Script.sol";

@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-FileCopyrightText: 2024 InshAllah Network <info@inshallah.network>
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.24;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";

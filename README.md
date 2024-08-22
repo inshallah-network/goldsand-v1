@@ -1,66 +1,40 @@
-## Foundry
+# Goldsand staking contract
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Goldsand is a project by [InshAllah Network](https://inshallah.network), aiming to enable access to staking for 2B+ users in MENA & SEA (primarily Muslim). Goldsand is a halal, shar'ia-compliant staking service that allows users to earn yield by staking their ETH with our specialized validators. Our validators filter out non-compliant transactions, ensuring that the yield earned through our staking service is halal.
 
-Foundry consists of:
+Goldsand is built as a set of contracts. The main Goldsand contract:
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+1. serves as an access point for users to use the Goldsand protocol
+2. orchestrates the launch of Goldsand validators 
+3. collects staking rewards 
+4. processes user withdrawal requests
 
-## Documentation
+## Local development
 
-https://book.getfoundry.sh/
+The repository is based on the Forge development framework for Ethereum. More information about forge is available here: [https://book.getfoundry.sh](https://book.getfoundry.sh).
 
-## Usage
+### Build contract locally
 
-### Build
-
-```shell
+```bash
 $ forge build
 ```
 
-### Test
+### Run unit tests
 
-```shell
+```bash
 $ forge test
 ```
 
-### Format
+## Security Audit
 
-```shell
-$ forge fmt
-```
+The Goldsand contract has been authored and reviewed by experienced solidity engineers. A security audit was conducted by Spearbit Labs Cantina (the same auditors of Coinbase, Uniswap, and others) in August. The audit report will soon be made available in the repository.
 
-### Gas Snapshots
+## License
 
-```shell
-$ forge snapshot
-```
+The smart contract code in this repository is licensed under GPL-3.0, excluding a small number of files licensed under CC0-1.0. Each file's license is available at the top of the file and clearly marked. Please see the included [`LICENSE`](./LICENSE) file for more information.
 
-### Anvil
+## Responsible disclosure of vulnerabilities
 
-```shell
-$ anvil
-```
+Security is taken seriously at InshAllah Network and we value the community's efforts in identifying potential vulnerabilities. If you come across any security issues or vulnerabilities within our smart contracts, we ask that you disclose them responsibly. Please reach out directly to our security team at [security@inshallah.network](mailto:security@inshallah.network). Your diligence in safeguarding our platform is greatly appreciated, and we are committed to addressing any reported issues promptly and transparently.
 
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+<p>&copy; 2024 InshAllah Network</p>
