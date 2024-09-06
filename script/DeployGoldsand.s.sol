@@ -15,10 +15,13 @@ import {DepositContract} from "./../src/DepositContract.sol";
 import {ERC1967Proxy} from
     "openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {WithdrawalVault} from "./../src/WithdrawalVault.sol";
+import {console} from "forge-std/console.sol";
 
 contract DeployGoldsand is Script {
     function deploy() public returns (Goldsand) {
         vm.startBroadcast();
+
+        address UPGRADER = tx.origin;
 
         // Determine the deposit contract address based on the network
         address payable depositContractAddress;
@@ -39,11 +42,9 @@ contract DeployGoldsand is Script {
 
         // Deploy an ERC1967Proxy with the WithdrawalVault implementation contract and initialize it
         ERC1967Proxy proxyWithdrawalVaultERC1967 =
-            new ERC1967Proxy(address(newWithdrawalVaultImpl), abi.encodeCall(WithdrawalVault.initialize, (tx.origin)));
+            new ERC1967Proxy(address(newWithdrawalVaultImpl), abi.encodeCall(WithdrawalVault.initialize, (UPGRADER)));
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(payable(address(proxyWithdrawalVaultERC1967)));
-
-        // Give the deployer ownership of the WithdrawalVault
-        proxyWithdrawalVault.transferOwnership(tx.origin);
+        console.log("Deployed WithdrawalVault proxy to address", address(proxyWithdrawalVault));
 
         // Deploy the Goldsand implementation contract
         Goldsand newGoldsandImpl = new Goldsand();
@@ -52,9 +53,17 @@ contract DeployGoldsand is Script {
         address payable withdrawalVaultAddress = payable(address(proxyWithdrawalVault));
         ERC1967Proxy proxyGoldsandERC1967 = new ERC1967Proxy(
             address(newGoldsandImpl),
-            abi.encodeCall(Goldsand.initialize, (depositContractAddress, withdrawalVaultAddress))
+            abi.encodeCall(Goldsand.initialize, (UPGRADER, depositContractAddress, withdrawalVaultAddress))
         );
         Goldsand proxyGoldsand = Goldsand(payable(address(proxyGoldsandERC1967)));
+        console.log("Deployed Goldsand proxy to address", address(proxyGoldsand));
+
+        // Give the WithdrawalVault the Goldsand address now that Goldsand is deployed
+        proxyWithdrawalVault.setGoldsandAddress(address(proxyGoldsand));
+        console.log("Set the Goldsand address in the WithdrawalVault");
+
+        // Give the UPGRADER ownership of the WithdrawalVault
+        proxyWithdrawalVault.transferOwnership(UPGRADER);
 
         vm.stopBroadcast();
         return proxyGoldsand;

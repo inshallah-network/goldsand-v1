@@ -11,6 +11,7 @@ import {IERC1155} from "openzeppelin-contracts-upgradeable/contracts/token/ERC11
 import {IERC1155Receiver} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
+import {ERC1155NotAccepted, ETHReceived, GoldsandSet} from "./interfaces/IWithdrawalVault.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -18,6 +19,8 @@ import {Lib} from "./lib/Lib.sol";
 
 contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable, UUPSUpgradeable, IERC1155Receiver {
     using SafeERC20 for IERC20;
+
+    address public goldsandAddress;
 
     /**
      * @dev Constructor that disables the initializers to prevent
@@ -33,19 +36,23 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
      * @dev The initialize function supplants the constructor in upgradeable
      * contracts to separate deployment from initialization, enabling upgrades
      * without reinitialization.
-     * @param initialOwner The address of the initial owner of the contract.
+     * @param _initialOwner The address of the initial owner of the contract.
      */
-    function initialize(address initialOwner) public initializer {
-        __Ownable_init(initialOwner);
+    function initialize(address _initialOwner) public initializer {
+        __Ownable_init(_initialOwner);
+    }
+
+    function setGoldsandAddress(address _goldsandAddress) external onlyOwner {
+        goldsandAddress = _goldsandAddress;
+        emit GoldsandSet(msg.sender, goldsandAddress);
     }
 
     /**
      * @notice Withdraws `_amount` of ETH to the `recipient` address.
-     * @param recipient The address to receive the withdrawn ETH.
      * @param _amount The amount of ETH to withdraw.
      */
-    function withdrawETH(address recipient, uint256 _amount) external onlyOwner {
-        return Lib.withdrawETH(recipient, _amount);
+    function withdrawETHToGoldsand(uint256 _amount) external onlyOwner {
+        return Lib.withdrawETHToGoldsand(goldsandAddress, _amount);
     }
 
     /**
@@ -100,12 +107,12 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
     }
 
     function onERC1155Received(
-        address, // operator
-        address, // from
-        uint256, // id
-        uint256, // value
+        address, // operator,
+        address, // from,
+        uint256, // id,
+        uint256, // value,
         bytes calldata // data
-    ) external pure override returns (bytes4) {
+    ) external pure override(IERC1155Receiver, IWithdrawalVault) returns (bytes4) {
         revert ERC1155NotAccepted();
     }
 
@@ -115,11 +122,11 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
         uint256[] calldata, // ids,
         uint256[] calldata, // values,
         bytes calldata // data
-    ) external pure override returns (bytes4) {
+    ) external pure override(IERC1155Receiver, IWithdrawalVault) returns (bytes4) {
         revert ERC1155NotAccepted();
     }
 
-    function supportsInterface(bytes4 interfaceId) public pure override(IERC165) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public pure override(IERC165, IWithdrawalVault) returns (bool) {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IWithdrawalVault).interfaceId
             || interfaceId == type(Initializable).interfaceId || interfaceId == type(OwnableUpgradeable).interfaceId
             || interfaceId == type(UUPSUpgradeable).interfaceId || interfaceId == type(IERC1155Receiver).interfaceId;

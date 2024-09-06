@@ -16,9 +16,15 @@ struct DepositData {
 
 event DepositDataAdded(DepositData depositData);
 
+event DepositDataPopped(DepositData depositData);
+
+event DepositDatasCleared();
+
+event EmergencyWithdrawn(address recipient, uint256 amount);
+
 event Funded(address funder, uint256 amount);
 
-event ExternalFunded(address funder, address funderAccountAddress, uint256 amount);
+event FundedOnBehalf(address funder, address funderAccountAddress, uint256 amount);
 
 event MinEthDepositSet(uint256 amount);
 
@@ -29,6 +35,10 @@ event MinEthDepositSet(uint256 amount);
 // unpause() emits an Unpaused event
 
 error DuplicateDepositDataDetected();
+
+error EmergencyWithdrawalFailed(address recipient, uint256 amount);
+
+error InsufficientDepositDatas();
 
 error InvalidPubkeyLength();
 
@@ -57,9 +67,19 @@ address payable constant HOLESKY_DEPOSIT_CONTRACT_ADDRESS = payable(0x4242424242
 address payable constant ANVIL_DEPOSIT_CONTRACT_ADDRESS = payable(0x00000000219ab540356cBB839Cbe05303d7705Fa);
 
 interface IGoldsand {
+    function funderToBalance(address funder) external view returns (uint256);
+
+    function pubkeyToAdded(bytes calldata pubkey) external view returns (bool);
+
+    function withdrawalVaultAddress() external returns (address payable);
+
     function getDepositDatasLength() external view returns (uint256);
 
-    function initialize(address payable depositContractAddress, address payable withdrawalVaultAddress) external;
+    function initialize(
+        address _initialOwner,
+        address payable depositContractAddress,
+        address payable withdrawalVaultAddress
+    ) external;
 
     fallback() external payable;
 
@@ -69,11 +89,21 @@ interface IGoldsand {
 
     function fund() external payable;
 
+    function fundOnBehalf(address _funderAccount) external payable;
+
+    function depositFundsIfPossible() external;
+
     function addDepositData(DepositData calldata _depositData) external;
 
     function addDepositDatas(DepositData[] calldata _depositDatas) external;
 
-    function withdrawETH(address recipient, uint256 _amount) external;
+    function popDepositData() external;
+
+    function popDepositDatas(uint256 _count) external;
+
+    function clearDepositDatas() external;
+
+    function operatorWithdrawETHForUser(address _user, uint256 _amount) external;
 
     function recoverERC20(address recipient, IERC20 _token, uint256 _amount) external;
 
@@ -87,6 +117,8 @@ interface IGoldsand {
         uint256[] calldata _tokenIds,
         uint256[] calldata _amounts
     ) external;
+
+    function supportsInterface(bytes4 _interfaceId) external pure returns (bool);
 
     function emergencyWithdraw() external;
 

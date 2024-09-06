@@ -8,7 +8,7 @@ import {Goldsand} from "../src/Goldsand.sol";
 import {WithdrawalVault} from "../src/WithdrawalVault.sol";
 
 contract UpgradeGoldsand is Script {
-    address payable proxyGoldsandAddress = payable(address(0x6353322D7E7bdDc436aBE571A46b43FAf796198b));
+    address payable proxyGoldsandAddress = payable(address(vm.envAddress("GOLDSAND_PROXY_ADDRESS")));
 
     function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
         proxyGoldsandAddress = _proxyGoldsandAddress;
@@ -35,12 +35,13 @@ contract UpgradeGoldsand is Script {
         address newWithdrawalVaultImplAddress
     ) public {
         vm.startBroadcast();
+        address UPGRADER = tx.origin;
         Goldsand proxyGoldsand = Goldsand(_proxyGoldsandAddress);
         address payable proxyWithdrawalVaultAddress = proxyGoldsand.withdrawalVaultAddress();
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyWithdrawalVaultAddress);
-        proxyGoldsand.grantRole(UPGRADER_ROLE, tx.origin);
+        proxyGoldsand.grantRole(UPGRADER_ROLE, UPGRADER);
         proxyGoldsand.upgradeToAndCall(newGoldsandImplAddress, "");
-        proxyGoldsand.renounceRole(UPGRADER_ROLE, tx.origin);
+        proxyGoldsand.renounceRole(UPGRADER_ROLE, UPGRADER);
         proxyWithdrawalVault.upgradeToAndCall(newWithdrawalVaultImplAddress, "");
         vm.stopBroadcast();
     }

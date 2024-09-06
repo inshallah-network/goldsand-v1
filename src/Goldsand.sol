@@ -35,10 +35,13 @@ import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/prox
 import {
     DepositData,
     DepositDataAdded,
+    DepositDataPopped,
+    DepositDatasCleared,
     Funded,
-    ExternalFunded,
+    FundedOnBehalf,
     MinEthDepositSet,
     DuplicateDepositDataDetected,
+    InsufficientDepositDatas,
     InvalidPubkeyLength,
     InvalidWithdrawalCredentialsLength,
     InvalidSignatureLength,
@@ -51,7 +54,14 @@ import {
     UPGRADER_ROLE
 } from "./interfaces/IGoldsand.sol";
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
-import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
+import {
+    ERC1155NotAccepted,
+    ETHWithdrawalFailed,
+    ETHWithdrawnForUser,
+    NotEnoughContractEther,
+    NotEnoughUserEther,
+    ZeroAmount
+} from "./interfaces/IWithdrawalVault.sol";
 import {Lib} from "./../src/lib/Lib.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {IERC165} from "openzeppelin-contracts/contracts/utils/introspection/IERC165.sol";
@@ -129,17 +139,19 @@ contract Goldsand is
      * @dev The initialize function supplants the constructor in upgradeable
      * contracts to separate deployment from initialization, enabling upgrades
      * without reinitialization.
+     * @param _initialOwner The address of the initial owner of the contract.
      * @param _depositContractAddress The address of the deposit contract.
      * @param _withdrawalVaultAddress The address of the withdrawal vault.
      */
-    function initialize(address payable _depositContractAddress, address payable _withdrawalVaultAddress)
-        public
-        initializer
-    {
+    function initialize(
+        address _initialOwner,
+        address payable _depositContractAddress,
+        address payable _withdrawalVaultAddress
+    ) public initializer {
         __AccessControl_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _initialOwner);
         depositContractAddress = _depositContractAddress;
         withdrawalVaultAddress = _withdrawalVaultAddress;
         minEthDeposit = 0.05 ether;
@@ -182,7 +194,6 @@ contract Goldsand is
             revert TooSmallDeposit();
         }
         funderToBalance[msg.sender] += msg.value;
-        depositFundsIfPossible();
         emit Funded(msg.sender, msg.value);
     }
 
@@ -192,19 +203,18 @@ contract Goldsand is
      * @dev If we've accumulated >32 ETH and have deposit datas, we'll call
      * the deposit contract as well.
      */
-    function externalFund(address _funderAccount) public payable onlyRole(OPERATOR_ROLE) whenNotPaused {
+    function fundOnBehalf(address _funderAccount) public payable onlyRole(OPERATOR_ROLE) whenNotPaused {
         if (_funderAccount == address(0)) {
             revert InvalidFunderAddress();
         }
         funderToBalance[_funderAccount] += msg.value;
-        depositFundsIfPossible();
-        emit ExternalFunded(msg.sender, _funderAccount, msg.value);
+        emit FundedOnBehalf(msg.sender, _funderAccount, msg.value);
     }
 
     /**
      * @notice Deposits funds into the deposit contract if we have deposit data as well.
      */
-    function depositFundsIfPossible() private whenNotPaused {
+    function depositFundsIfPossible() public onlyRole(OPERATOR_ROLE) whenNotPaused {
         uint256 numberOfValidatorFunds = address(this).balance / 32 ether;
         if (numberOfValidatorFunds == 0) {
             return;
@@ -270,66 +280,122 @@ contract Goldsand is
     }
 
     /**
-     * @notice Withdraws `_amount` of ETH to the `recipient` address.
-     * @param recipient The address to receive the withdrawn ETH.
+     * @notice Pops a deposit data entry from the stack.
+     * @dev This function is used to remove the last added deposit data entry.
+     */
+    function popDepositData() public onlyRole(OPERATOR_ROLE) whenNotPaused {
+        uint256 numberOfDepositDatas = depositDatas.length;
+        if (numberOfDepositDatas == 0) {
+            revert InsufficientDepositDatas();
+        }
+        DepositData memory depositData = depositDatas[numberOfDepositDatas - 1];
+        depositDatas.pop();
+        emit DepositDataPopped(depositData);
+    }
+
+    /**
+     * @notice Pops multiple deposit data entries from the stack.
+     * @dev This function is used to remove the last added deposit data entries.
+     * @param _count The number of deposit data entries to pop.
+     */
+    function popDepositDatas(uint256 _count) public onlyRole(OPERATOR_ROLE) whenNotPaused {
+        if (_count > depositDatas.length) {
+            revert InsufficientDepositDatas();
+        }
+        for (uint256 i = 0; i < _count; ++i) {
+            popDepositData();
+        }
+    }
+
+    /**
+     * @notice Clears all deposit data entries from the stack.
+     * @dev This function is used to remove all added deposit data entries.
+     */
+    function clearDepositDatas() public onlyRole(OPERATOR_ROLE) whenNotPaused {
+        popDepositDatas(depositDatas.length);
+        emit DepositDatasCleared();
+    }
+
+    /**
+     * @notice Withdraws `_amount` of ETH from the `user`'s balance.
+     * @param _user The address to withdraw the ETH from.
      * @param _amount The amount of ETH to withdraw.
      */
-    function withdrawETH(address recipient, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
-        return Lib.withdrawETH(recipient, _amount);
+    function operatorWithdrawETHForUser(address _user, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
+        if (_amount == 0) {
+            revert ZeroAmount();
+        }
+
+        uint256 contractBalance = address(this).balance;
+        if (_amount > contractBalance) {
+            revert NotEnoughContractEther(_amount, contractBalance);
+        }
+        uint256 userBalance = funderToBalance[_user];
+        if (_amount > userBalance) {
+            revert NotEnoughUserEther(_amount, userBalance);
+        }
+
+        funderToBalance[_user] -= _amount;
+
+        (bool ethWithdrawalSuccess,) = payable(_user).call{value: _amount}("");
+        if (!ethWithdrawalSuccess) {
+            revert ETHWithdrawalFailed(_user, _amount);
+        }
+        emit ETHWithdrawnForUser(_user, msg.sender, _amount);
     }
 
     /**
      * @notice Transfers a given `_amount` of an ERC20 token (defined by the `_token` contract address)
-     * to the `recipient` address.
-     * @param recipient The address to receive the recovered ERC20 tokens.
+     * to the `_recipient` address.
+     * @param _recipient The address to receive the recovered ERC20 tokens.
      * @param _token The ERC20 token contract.
      * @param _amount The amount of ERC20 tokens to transfer.
      */
-    function recoverERC20(address recipient, IERC20 _token, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
-        return Lib.recoverERC20(recipient, _token, _amount);
+    function recoverERC20(address _recipient, IERC20 _token, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
+        return Lib.recoverERC20(_recipient, _token, _amount);
     }
 
     /**
      * @notice Transfers a given ERC721 token (defined by the `_token` contract address) with `_tokenId`
-     * to the `recipient` address.
-     * @param recipient The address to receive the recovered ERC721 NFT.
+     * to the `_recipient` address.
+     * @param _recipient The address to receive the recovered ERC721 NFT.
      * @param _token The ERC721 token contract.
      * @param _tokenId The ID of the ERC721 token to transfer.
      */
-    function recoverERC721(address recipient, IERC721 _token, uint256 _tokenId) external onlyRole(OPERATOR_ROLE) {
-        return Lib.recoverERC721(recipient, _token, _tokenId);
+    function recoverERC721(address _recipient, IERC721 _token, uint256 _tokenId) external onlyRole(OPERATOR_ROLE) {
+        return Lib.recoverERC721(_recipient, _token, _tokenId);
     }
 
     /**
      * @notice Transfers a given `_amount` of an ERC1155 token (defined by the `_token` contract address)
-     * with `_tokenId` to the `recipient` address.
-     * @param recipient The address to receive the recovered ERC1155 token.
+     * with `_tokenId` to the `_recipient` address.
+     * @param _recipient The address to receive the recovered ERC1155 token.
      * @param _token The ERC1155 token contract.
      * @param _tokenId The ID of the ERC1155 token to transfer.
      * @param _amount The amount of ERC1155 tokens to transfer.
      */
-    function recoverERC1155(address recipient, IERC1155 _token, uint256 _tokenId, uint256 _amount)
+    function recoverERC1155(address _recipient, IERC1155 _token, uint256 _tokenId, uint256 _amount)
         external
         onlyRole(OPERATOR_ROLE)
     {
-        return Lib.recoverERC1155(recipient, _token, _tokenId, _amount);
+        return Lib.recoverERC1155(_recipient, _token, _tokenId, _amount);
     }
 
     /**
      * @notice Transfers a batch of ERC1155 tokens (defined by the `_token` contract address)
-     * with `_tokenIds` and corresponding `_amounts` to the `recipient` address.
-     * @param recipient The address to receive the recovered ERC1155 tokens.
+     * with `_tokenIds` and corresponding `_amounts` to the `_recipient` address.
+     * @param _recipient The address to receive the recovered ERC1155 tokens.
      * @param _token The ERC1155 token contract.
      * @param _tokenIds The IDs of the ERC1155 tokens to transfer.
      * @param _amounts The amounts of ERC1155 tokens to transfer.
      */
     function recoverBatchERC1155(
-        address recipient,
+        address _recipient,
         IERC1155 _token,
         uint256[] calldata _tokenIds,
         uint256[] calldata _amounts
     ) external onlyRole(OPERATOR_ROLE) {
-        return Lib.recoverBatchERC1155(recipient, _token, _tokenIds, _amounts);
+        return Lib.recoverBatchERC1155(_recipient, _token, _tokenIds, _amounts);
     }
 
     function onERC1155Received(
@@ -339,7 +405,7 @@ contract Goldsand is
         uint256, // value
         bytes calldata // data
     ) external pure override returns (bytes4) {
-        revert IWithdrawalVault.ERC1155NotAccepted();
+        revert ERC1155NotAccepted();
     }
 
     function onERC1155BatchReceived(
@@ -349,13 +415,13 @@ contract Goldsand is
         uint256[] calldata, // values,
         bytes calldata // data
     ) external pure override returns (bytes4) {
-        revert IWithdrawalVault.ERC1155NotAccepted();
+        revert ERC1155NotAccepted();
     }
 
     function supportsInterface(bytes4 interfaceId)
         public
         pure
-        override(IERC165, AccessControlUpgradeable)
+        override(IERC165, IGoldsand, AccessControlUpgradeable)
         returns (bool)
     {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IGoldsand).interfaceId
@@ -369,9 +435,7 @@ contract Goldsand is
      */
     function emergencyWithdraw() external onlyRole(EMERGENCY_ROLE) whenPaused {
         uint256 balance = address(this).balance;
-        if (balance > 0) {
-            Lib.withdrawETH(msg.sender, balance);
-        }
+        Lib.emergencyWithdraw(msg.sender, balance);
     }
 
     /**

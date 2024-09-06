@@ -1,0 +1,81 @@
+// SPDX-FileCopyrightText: 2024 InshAllah Network <info@inshallah.network>
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity 0.8.24;
+
+import {Script} from "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
+import {
+    IGoldsand,
+    UPGRADER_ROLE,
+    MAINNET_DEPOSIT_CONTRACT_ADDRESS,
+    HOLESKY_DEPOSIT_CONTRACT_ADDRESS,
+    ANVIL_DEPOSIT_CONTRACT_ADDRESS
+} from "./../src/interfaces/IGoldsand.sol";
+import {Options} from "openzeppelin-foundry-upgrades/src/Upgrades.sol";
+import {
+    ProposeUpgradeResponse, Defender, ApprovalProcessResponse
+} from "openzeppelin-foundry-upgrades/src/Defender.sol";
+
+contract SafeUpgradeGoldsand is Script {
+    address payable proxyGoldsandAddress = payable(address(vm.env("GOLDSAND_PROXY_ADDRESS")));
+
+    function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
+        proxyGoldsandAddress = _proxyGoldsandAddress;
+    }
+
+    function run() external {
+        vm.startBroadcast();
+
+        bool upgradeGoldsand = true;
+        bool upgradeWithdrawalVault = false;
+        require(
+            upgradeGoldsand != upgradeWithdrawalVault,
+            "Only upgrade one contract at a time, or else the other upgrade gets cancelled/rejected in Safe"
+        );
+
+        ApprovalProcessResponse memory upgradeApprovalProcess = Defender.getUpgradeApprovalProcess();
+
+        if (upgradeApprovalProcess.via == address(0)) {
+            revert(
+                string.concat(
+                    "Upgrade approval process with id ",
+                    upgradeApprovalProcess.approvalProcessId,
+                    " has no assigned address"
+                )
+            );
+        }
+
+        Options memory withdrawalVaultOptions;
+        Options memory goldsandOptions;
+        withdrawalVaultOptions.referenceContract = "WithdrawalVaultV1.sol:WithdrawalVault";
+        // TODO change to use same implementation as SafeDeployGoldsand.s.sol
+        withdrawalVaultOptions.defender.salt = vm.env("OLD_SALT");
+        withdrawalVaultOptions.defender.skipLicenseType = true;
+        withdrawalVaultOptions.defender.useDefenderDeploy = true;
+        goldsandOptions.referenceContract = "GoldsandV1.sol:Goldsand";
+        // TODO change to use same implementation as SafeDeployGoldsand.s.sol
+        goldsandOptions.defender.salt = vm.env("NEW_SALT");
+        goldsandOptions.defender.skipLicenseType = true;
+        goldsandOptions.defender.useDefenderDeploy = true;
+
+        IGoldsand proxyGoldsand = IGoldsand(proxyGoldsandAddress);
+        address payable proxyWithdrawalVaultAddress = proxyGoldsand.withdrawalVaultAddress();
+
+        if (upgradeGoldsand) {
+            ProposeUpgradeResponse memory goldsandResponse =
+                Defender.proposeUpgrade(proxyGoldsandAddress, "GoldsandV2.sol:Goldsand", goldsandOptions);
+            console.log("Goldsand Proposal ID", goldsandResponse.proposalId);
+            console.log("Goldsand URL", goldsandResponse.url);
+        }
+
+        if (upgradeWithdrawalVault) {
+            ProposeUpgradeResponse memory withdrawalVaultResponse = Defender.proposeUpgrade(
+                proxyWithdrawalVaultAddress, "WithdrawalVaultV2.sol:WithdrawalVault", withdrawalVaultOptions
+            );
+            console.log("WithdrawalVault Proposal ID", withdrawalVaultResponse.proposalId);
+            console.log("WithdrawalVault URL", withdrawalVaultResponse.url);
+        }
+
+        vm.stopBroadcast();
+    }
+}

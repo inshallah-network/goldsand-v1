@@ -10,7 +10,7 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/src/Upgrades.sol";
 import {Options} from "openzeppelin-foundry-upgrades/src/Options.sol";
 
 contract ValidateUpgradeGoldsand is Script {
-    address payable proxyGoldsandAddress = payable(address(0x6353322D7E7bdDc436aBE571A46b43FAf796198b));
+    address payable proxyGoldsandAddress = payable(address(vm.envAddress("GOLDSAND_PROXY_ADDRESS")));
 
     function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
         proxyGoldsandAddress = _proxyGoldsandAddress;
@@ -19,15 +19,18 @@ contract ValidateUpgradeGoldsand is Script {
     function run() external {
         vm.startBroadcast();
 
+        address UPGRADER = tx.origin;
+
         Options memory withdrawalVaultOptions;
         Options memory goldsandOptions;
         withdrawalVaultOptions.referenceContract = "WithdrawalVaultV1.sol:WithdrawalVault";
         goldsandOptions.referenceContract = "GoldsandV1.sol:Goldsand";
 
+        // TODO check salt
         Goldsand proxyGoldsand = Goldsand(proxyGoldsandAddress);
-        proxyGoldsand.grantRole(UPGRADER_ROLE, tx.origin);
+        proxyGoldsand.grantRole(UPGRADER_ROLE, UPGRADER);
         Upgrades.upgradeProxy(proxyGoldsandAddress, "GoldsandV2.sol:Goldsand", "", goldsandOptions);
-        proxyGoldsand.renounceRole(UPGRADER_ROLE, tx.origin);
+        proxyGoldsand.renounceRole(UPGRADER_ROLE, UPGRADER);
         address payable proxyWithdrawalVaultAddress = proxyGoldsand.withdrawalVaultAddress();
         Upgrades.upgradeProxy(
             proxyWithdrawalVaultAddress, "WithdrawalVaultV2.sol:WithdrawalVault", "", withdrawalVaultOptions

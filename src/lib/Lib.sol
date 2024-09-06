@@ -2,7 +2,18 @@
 pragma solidity 0.8.24;
 
 import {DepositData} from "./../interfaces/IGoldsand.sol";
-import {IWithdrawalVault} from "./../interfaces/IWithdrawalVault.sol";
+import {EmergencyWithdrawalFailed, EmergencyWithdrawn} from "./../interfaces/IGoldsand.sol";
+import {
+    ERC20Recovered,
+    ERC721Recovered,
+    ERC1155Recovered,
+    ERC1155BatchRecovered,
+    ERC1155NotAccepted,
+    ETHWithdrawalFailed,
+    ETHWithdrawn,
+    NotEnoughContractEther,
+    ZeroAmount
+} from "./../interfaces/IWithdrawalVault.sol";
 import {IERC20} from "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import {IERC721} from "openzeppelin-contracts-upgradeable/contracts/token/ERC721/ERC721Upgradeable.sol";
 import {IERC1155} from "openzeppelin-contracts-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
@@ -65,21 +76,34 @@ library Lib {
      * @param recipient The address to receive the withdrawn ETH.
      * @param _amount The amount of ETH to withdraw.
      */
-    function withdrawETH(address recipient, uint256 _amount) internal {
+    function withdrawETHToGoldsand(address recipient, uint256 _amount) internal {
         if (_amount == 0) {
-            revert IWithdrawalVault.ZeroAmount();
+            revert ZeroAmount();
         }
 
         uint256 balance = address(this).balance;
         if (_amount > balance) {
-            revert IWithdrawalVault.NotEnoughEther(_amount, balance);
+            revert NotEnoughContractEther(_amount, balance);
         }
 
         (bool ethWithdrawalSuccess,) = payable(recipient).call{value: _amount}("");
         if (!ethWithdrawalSuccess) {
-            revert IWithdrawalVault.ETHWithdrawalFailed(recipient, _amount);
+            revert ETHWithdrawalFailed(recipient, _amount);
         }
-        emit IWithdrawalVault.ETHWithdrawn(recipient, msg.sender, _amount);
+        emit ETHWithdrawn(recipient, msg.sender, _amount);
+    }
+
+    /**
+     * @notice Performs an emergency withdrawal of `_amount` of ETH to the `_recipient` address.
+     * @param _recipient The address to receive the withdrawn ETH.
+     * @param _amount The amount of ETH to withdraw.
+     */
+    function emergencyWithdraw(address _recipient, uint256 _amount) internal {
+        (bool emergencyWithdrawalSuccess,) = payable(_recipient).call{value: _amount}("");
+        if (!emergencyWithdrawalSuccess) {
+            revert EmergencyWithdrawalFailed(_recipient, _amount);
+        }
+        emit EmergencyWithdrawn(_recipient, _amount);
     }
 
     /**
@@ -91,10 +115,10 @@ library Lib {
      */
     function recoverERC20(address recipient, IERC20 _token, uint256 _amount) internal {
         if (_amount == 0) {
-            revert IWithdrawalVault.ZeroAmount();
+            revert ZeroAmount();
         }
 
-        emit IWithdrawalVault.ERC20Recovered(recipient, msg.sender, address(_token), _amount);
+        emit ERC20Recovered(recipient, msg.sender, address(_token), _amount);
 
         _token.safeTransfer(recipient, _amount);
     }
@@ -107,7 +131,7 @@ library Lib {
      * @param _tokenId The ID of the ERC721 token to transfer.
      */
     function recoverERC721(address recipient, IERC721 _token, uint256 _tokenId) internal {
-        emit IWithdrawalVault.ERC721Recovered(recipient, msg.sender, address(_token), _tokenId);
+        emit ERC721Recovered(recipient, msg.sender, address(_token), _tokenId);
 
         _token.safeTransferFrom(address(this), recipient, _tokenId);
     }
@@ -122,10 +146,10 @@ library Lib {
      */
     function recoverERC1155(address recipient, IERC1155 _token, uint256 _tokenId, uint256 _amount) internal {
         if (_amount == 0) {
-            revert IWithdrawalVault.ZeroAmount();
+            revert ZeroAmount();
         }
 
-        emit IWithdrawalVault.ERC1155Recovered(recipient, msg.sender, address(_token), _tokenId, _amount);
+        emit ERC1155Recovered(recipient, msg.sender, address(_token), _tokenId, _amount);
 
         _token.safeTransferFrom(address(this), recipient, _tokenId, _amount, "");
     }
@@ -145,10 +169,10 @@ library Lib {
         uint256[] calldata _amounts
     ) internal {
         if (_tokenIds.length == 0 || _amounts.length == 0) {
-            revert IWithdrawalVault.ZeroAmount();
+            revert ZeroAmount();
         }
 
-        emit IWithdrawalVault.ERC1155BatchRecovered(recipient, msg.sender, address(_token), _tokenIds, _amounts);
+        emit ERC1155BatchRecovered(recipient, msg.sender, address(_token), _tokenIds, _amounts);
 
         _token.safeBatchTransferFrom(address(this), recipient, _tokenIds, _amounts, "");
     }
