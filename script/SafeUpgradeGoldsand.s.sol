@@ -17,7 +17,7 @@ import {
 } from "openzeppelin-foundry-upgrades/src/Defender.sol";
 
 contract SafeUpgradeGoldsand is Script {
-    address payable proxyGoldsandAddress = payable(address(vm.env("GOLDSAND_PROXY_ADDRESS")));
+    address payable proxyGoldsandAddress = payable(address(vm.envAddress("GOLDSAND_PROXY_ADDRESS")));
 
     function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
         proxyGoldsandAddress = _proxyGoldsandAddress;
@@ -49,12 +49,12 @@ contract SafeUpgradeGoldsand is Script {
         Options memory goldsandOptions;
         withdrawalVaultOptions.referenceContract = "WithdrawalVaultV1.sol:WithdrawalVault";
         // TODO change to use same implementation as SafeDeployGoldsand.s.sol
-        withdrawalVaultOptions.defender.salt = vm.env("OLD_SALT");
+        withdrawalVaultOptions.defender.salt = vm.envBytes32("OLD_SALT");
         withdrawalVaultOptions.defender.skipLicenseType = true;
         withdrawalVaultOptions.defender.useDefenderDeploy = true;
         goldsandOptions.referenceContract = "GoldsandV1.sol:Goldsand";
         // TODO change to use same implementation as SafeDeployGoldsand.s.sol
-        goldsandOptions.defender.salt = vm.env("NEW_SALT");
+        goldsandOptions.defender.salt = vm.envBytes32("NEW_SALT");
         goldsandOptions.defender.skipLicenseType = true;
         goldsandOptions.defender.useDefenderDeploy = true;
 
