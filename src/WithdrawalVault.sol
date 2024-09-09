@@ -40,6 +40,7 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
      */
     function initialize(address _initialOwner) public initializer {
         __Ownable_init(_initialOwner);
+        __UUPSUpgradeable_init();
     }
 
     function setGoldsandAddress(address _goldsandAddress) external onlyOwner {
@@ -128,8 +129,8 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
 
     function supportsInterface(bytes4 interfaceId) public pure override(IERC165, IWithdrawalVault) returns (bool) {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IWithdrawalVault).interfaceId
-            || interfaceId == type(Initializable).interfaceId || interfaceId == type(OwnableUpgradeable).interfaceId
-            || interfaceId == type(UUPSUpgradeable).interfaceId || interfaceId == type(IERC1155Receiver).interfaceId;
+            || interfaceId == type(OwnableUpgradeable).interfaceId || interfaceId == type(UUPSUpgradeable).interfaceId
+            || interfaceId == type(IERC1155Receiver).interfaceId;
     }
 
     /**

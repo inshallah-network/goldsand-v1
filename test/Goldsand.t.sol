@@ -1458,25 +1458,25 @@ contract GoldsandTest is Test {
     function test_GoldsandSupportsInterface() public view {
         assertTrue(proxyGoldsand.supportsInterface(type(IERC165).interfaceId));
         assertTrue(proxyGoldsand.supportsInterface(type(IGoldsand).interfaceId));
-        assertTrue(proxyGoldsand.supportsInterface(type(Initializable).interfaceId));
         assertTrue(proxyGoldsand.supportsInterface(type(AccessControlUpgradeable).interfaceId));
         assertTrue(proxyGoldsand.supportsInterface(type(PausableUpgradeable).interfaceId));
         assertTrue(proxyGoldsand.supportsInterface(type(UUPSUpgradeable).interfaceId));
         assertTrue(proxyGoldsand.supportsInterface(type(IERC1155Receiver).interfaceId));
 
         assertFalse(proxyGoldsand.supportsInterface(type(IWithdrawalVault).interfaceId));
+        assertFalse(proxyGoldsand.supportsInterface(bytes4(0x00000000)));
         assertFalse(proxyGoldsand.supportsInterface(bytes4(0x00000001)));
     }
 
     function test_WithdrawalVaultSupportsInterface() public view {
         assertTrue(proxyWithdrawalVault.supportsInterface(type(IERC165).interfaceId));
         assertTrue(proxyWithdrawalVault.supportsInterface(type(IWithdrawalVault).interfaceId));
-        assertTrue(proxyWithdrawalVault.supportsInterface(type(Initializable).interfaceId));
         assertTrue(proxyWithdrawalVault.supportsInterface(type(OwnableUpgradeable).interfaceId));
         assertTrue(proxyWithdrawalVault.supportsInterface(type(UUPSUpgradeable).interfaceId));
         assertTrue(proxyWithdrawalVault.supportsInterface(type(IERC1155Receiver).interfaceId));
 
         assertFalse(proxyWithdrawalVault.supportsInterface(type(IGoldsand).interfaceId));
+        assertFalse(proxyWithdrawalVault.supportsInterface(bytes4(0x00000000)));
         assertFalse(proxyWithdrawalVault.supportsInterface(bytes4(0x00000001)));
     }
 

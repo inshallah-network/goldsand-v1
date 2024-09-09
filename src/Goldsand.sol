@@ -95,7 +95,7 @@ contract Goldsand is
 
     /**
      * @notice Stack of deposit data entries.
-     * @dev This is pushed in addDepositData(...) and popped in depositFundsIfPossible().
+     * @dev This is pushed in addDepositData(...) and popped in depositFundsIfPossible() and popDepositData().
      */
     DepositData[] public depositDatas;
 
@@ -186,8 +186,6 @@ contract Goldsand is
 
     /**
      * @notice Deposits funds into the contract.
-     * @dev If we've accumulated >32 ETH and have deposit datas, we'll call
-     * the deposit contract as well.
      */
     function fund() public payable whenNotPaused {
         if (msg.value < minEthDeposit) {
@@ -200,8 +198,6 @@ contract Goldsand is
     /**
      * @notice Deposits funds into the contract but assigns the funds to
      * another account. This function can only be used by Goldsand.
-     * @dev If we've accumulated >32 ETH and have deposit datas, we'll call
-     * the deposit contract as well.
      */
     function fundOnBehalf(address _funderAccount) public payable onlyRole(OPERATOR_ROLE) whenNotPaused {
         if (_funderAccount == address(0)) {
@@ -311,7 +307,7 @@ contract Goldsand is
      * @notice Clears all deposit data entries from the stack.
      * @dev This function is used to remove all added deposit data entries.
      */
-    function clearDepositDatas() public onlyRole(OPERATOR_ROLE) whenNotPaused {
+    function clearDepositDatas() external onlyRole(OPERATOR_ROLE) whenNotPaused {
         popDepositDatas(depositDatas.length);
         emit DepositDatasCleared();
     }
@@ -321,7 +317,11 @@ contract Goldsand is
      * @param _user The address to withdraw the ETH from.
      * @param _amount The amount of ETH to withdraw.
      */
-    function operatorWithdrawETHForUser(address _user, uint256 _amount) external onlyRole(OPERATOR_ROLE) {
+    function operatorWithdrawETHForUser(address _user, uint256 _amount)
+        external
+        onlyRole(OPERATOR_ROLE)
+        whenNotPaused
+    {
         if (_amount == 0) {
             revert ZeroAmount();
         }
@@ -425,7 +425,7 @@ contract Goldsand is
         returns (bool)
     {
         return interfaceId == type(IERC165).interfaceId || interfaceId == type(IGoldsand).interfaceId
-            || interfaceId == type(Initializable).interfaceId || interfaceId == type(AccessControlUpgradeable).interfaceId
+            || interfaceId == type(AccessControlUpgradeable).interfaceId
             || interfaceId == type(PausableUpgradeable).interfaceId || interfaceId == type(UUPSUpgradeable).interfaceId
             || interfaceId == type(IERC1155Receiver).interfaceId;
     }
