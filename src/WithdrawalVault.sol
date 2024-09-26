@@ -11,7 +11,7 @@ import {IERC1155} from "openzeppelin-contracts-upgradeable/contracts/token/ERC11
 import {IERC1155Receiver} from "openzeppelin-contracts/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IGoldsand} from "./interfaces/IGoldsand.sol";
-import {ERC1155NotAccepted, ETHReceived, GoldsandSet} from "./interfaces/IWithdrawalVault.sol";
+import {ERC1155NotAccepted, ETHReceived, OperatorSet} from "./interfaces/IWithdrawalVault.sol";
 import {IWithdrawalVault} from "./interfaces/IWithdrawalVault.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -20,7 +20,7 @@ import {Lib} from "./lib/Lib.sol";
 contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable, UUPSUpgradeable, IERC1155Receiver {
     using SafeERC20 for IERC20;
 
-    address public goldsandAddress;
+    address public operatorAddress;
 
     /**
      * @dev Constructor that disables the initializers to prevent
@@ -43,17 +43,17 @@ contract WithdrawalVault is IWithdrawalVault, Initializable, OwnableUpgradeable,
         __UUPSUpgradeable_init();
     }
 
-    function setGoldsandAddress(address _goldsandAddress) external onlyOwner {
-        goldsandAddress = _goldsandAddress;
-        emit GoldsandSet(msg.sender, goldsandAddress);
+    function setOperatorAddress(address _operatorAddress) external onlyOwner {
+        operatorAddress = _operatorAddress;
+        emit OperatorSet(msg.sender, operatorAddress);
     }
 
     /**
-     * @notice Withdraws `_amount` of ETH to the `recipient` address.
+     * @notice Withdraws `_amount` of ETH to the `operatorAddress`.
      * @param _amount The amount of ETH to withdraw.
      */
-    function withdrawETHToGoldsand(uint256 _amount) external onlyOwner {
-        return Lib.withdrawETHToGoldsand(goldsandAddress, _amount);
+    function withdrawETHToOperator(uint256 _amount) external onlyOwner {
+        return Lib.withdrawETHToOperator(operatorAddress, _amount);
     }
 
     /**

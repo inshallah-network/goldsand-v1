@@ -54,11 +54,11 @@ event ERC1155BatchRecovered(
 );
 
 /**
- * @dev Emitted when the Goldsand proxy address is set.
+ * @dev Emitted when the Operator address is set in the WithdrawalVault.
  * @param newGoldsandProxyAddress The new Goldsand proxy address.
  * @param requestedBy The address that requested the change.
  */
-event GoldsandSet(address newGoldsandProxyAddress, address requestedBy);
+event OperatorSet(address newGoldsandProxyAddress, address requestedBy);
 
 // Errors
 error ETHWithdrawalFailed(address recipient, uint256 amount);
@@ -68,9 +68,9 @@ error ZeroAmount();
 error ERC1155NotAccepted();
 
 interface IWithdrawalVault {
-    function setGoldsandAddress(address _goldsandAddress) external;
+    function setOperatorAddress(address _goldsandAddress) external;
 
-    function withdrawETHToGoldsand(uint256 _amount) external;
+    function withdrawETHToOperator(uint256 _amount) external;
 
     function recoverERC20(address recipient, IERC20 _token, uint256 _amount) external;
 

@@ -22,7 +22,7 @@ event DepositDatasCleared();
 
 event EmergencyWithdrawn(address recipient, uint256 amount);
 
-event Funded(address funder, uint256 amount);
+event Funded(address indexed funder, uint256 indexed amount);
 
 event FundedOnBehalf(address funder, address funderAccountAddress, uint256 amount);
 

@@ -35,7 +35,7 @@ import {
     ETHWithdrawalFailed,
     ETHWithdrawn,
     ETHWithdrawnForUser,
-    GoldsandSet,
+    OperatorSet,
     NotEnoughContractEther,
     NotEnoughUserEther,
     ZeroAmount
@@ -131,7 +131,7 @@ contract GoldsandTest is Test {
     address immutable OWNER = msg.sender; // 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
     address immutable EMERGENCY = makeAddr("EMERGENCY"); // 0x4721cB0D6C1215210b1C1979Cb90446366344A7E
     address immutable GOVERNANCE = makeAddr("GOVERNANCE"); // 0xFC538Ae3f25F29Bfc39188Dbe726D46cbf3D00C6
-    address immutable OPERATOR = makeAddr("OPERATOR"); // 0xd1b0c5cBF884fcc27dAF9f733739b39FB0B7DAa1
+    address immutable OPERATOR = vm.envAddress("OPERATOR_ADDRESS"); // makeAddr("OPERATOR"); // 0xd1b0c5cBF884fcc27dAF9f733739b39FB0B7DAa1
     address immutable UPGRADER = makeAddr("UPGRADER"); // 0x8B1D4B40080A998c21c5175fC6f0dd531Fe2Cb5E
     uint256 constant OWNER_STARTING_BALANCE = 0 ether;
     uint256 constant USER1_STARTING_BALANCE = 256 ether;
@@ -930,29 +930,29 @@ contract GoldsandTest is Test {
         proxyGoldsand.addDepositData(depositData4);
     }
 
-    function test_CallWithdrawETHToGoldsandNotEnoughContractEther() public {
+    function test_CallWithdrawETHToOperatorNotEnoughContractEther() public {
         vm.deal(USER1, USER1_STARTING_BALANCE);
 
         assertEq(address(proxyWithdrawalVault).balance, 0 ether);
-        assertEq(address(proxyGoldsand).balance, 0 ether);
+        assertEq(OPERATOR.balance, 0 ether);
 
         vm.prank(OWNER);
         vm.expectRevert(abi.encodeWithSelector(NotEnoughContractEther.selector, 16 ether, 0));
-        proxyWithdrawalVault.withdrawETHToGoldsand(16 ether);
+        proxyWithdrawalVault.withdrawETHToOperator(16 ether);
 
         assertEq(address(proxyWithdrawalVault).balance, 0 ether);
-        assertEq(address(proxyGoldsand).balance, 0 ether);
+        assertEq(OPERATOR.balance, 0 ether);
     }
 
-    function test_CallWithdrawETHToGoldsandZeroAmount() public {
+    function test_CallWithdrawETHToOperatorZeroAmount() public {
         vm.deal(USER1, USER1_STARTING_BALANCE);
 
         vm.prank(OWNER);
         vm.expectRevert(abi.encodeWithSelector(ZeroAmount.selector));
-        proxyWithdrawalVault.withdrawETHToGoldsand(0 ether);
+        proxyWithdrawalVault.withdrawETHToOperator(0 ether);
     }
 
-    function test_CallWithdrawETHToGoldsandSucceeds() public {
+    function test_CallWithdrawETHToOperatorSucceeds() public {
         vm.deal(OWNER, OWNER_STARTING_BALANCE);
         vm.deal(USER1, USER1_STARTING_BALANCE);
 
@@ -960,36 +960,36 @@ contract GoldsandTest is Test {
         assertTrue(callSuccess);
 
         assertEq(address(proxyWithdrawalVault).balance, 32 ether);
-        assertEq(address(proxyGoldsand).balance, 0 ether);
+        assertEq(OPERATOR.balance, 0 ether);
         assertEq(OWNER.balance, OWNER_STARTING_BALANCE);
         assertEq(USER1.balance, USER1_STARTING_BALANCE);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit ETHWithdrawn(address(proxyGoldsand), OWNER, 4 ether);
-        proxyWithdrawalVault.withdrawETHToGoldsand(4 ether);
+        emit ETHWithdrawn(OPERATOR, OWNER, 4 ether);
+        proxyWithdrawalVault.withdrawETHToOperator(4 ether);
 
         assertEq(address(proxyWithdrawalVault).balance, 32 ether - 4 ether);
-        assertEq(address(proxyGoldsand).balance, 4 ether);
+        assertEq(OPERATOR.balance, 4 ether);
         assertEq(OWNER.balance, OWNER_STARTING_BALANCE);
         assertEq(USER1.balance, USER1_STARTING_BALANCE);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit ETHWithdrawn(address(proxyGoldsand), OWNER, 4 ether);
-        proxyWithdrawalVault.withdrawETHToGoldsand(4 ether);
+        emit ETHWithdrawn(OPERATOR, OWNER, 4 ether);
+        proxyWithdrawalVault.withdrawETHToOperator(4 ether);
 
         assertEq(proxyGoldsand.withdrawalVaultAddress().balance, 32 ether - 8 ether);
-        assertEq(address(proxyGoldsand).balance, 8 ether);
+        assertEq(OPERATOR.balance, 8 ether);
         assertEq(OWNER.balance, OWNER_STARTING_BALANCE);
         assertEq(USER1.balance, USER1_STARTING_BALANCE);
 
         vm.prank(USER1);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, USER1));
-        proxyWithdrawalVault.withdrawETHToGoldsand(4 ether);
+        proxyWithdrawalVault.withdrawETHToOperator(4 ether);
 
         assertEq(address(proxyWithdrawalVault).balance, 32 ether - 8 ether);
-        assertEq(address(proxyGoldsand).balance, 8 ether);
+        assertEq(OPERATOR.balance, 8 ether);
         assertEq(OWNER.balance, OWNER_STARTING_BALANCE);
         assertEq(USER1.balance, USER1_STARTING_BALANCE);
     }
@@ -1388,7 +1388,7 @@ contract GoldsandTest is Test {
         assert(receiveSuccess);
     }
 
-    function test_withdrawETHToGoldsandETHWithdrawalFailed() public {
+    function test_withdrawETHToOperatorETHWithdrawalFailed() public {
         vm.deal(address(proxyWithdrawalVault), WITHDRAWAL_VAULT_STARTING_BALANCE);
 
         assertEq(address(proxyGoldsand).balance, 0 ether);
@@ -1396,8 +1396,8 @@ contract GoldsandTest is Test {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true);
-        emit GoldsandSet(OWNER, address(rejectEther));
-        proxyWithdrawalVault.setGoldsandAddress(address(rejectEther));
+        emit OperatorSet(OWNER, address(rejectEther));
+        proxyWithdrawalVault.setOperatorAddress(address(rejectEther));
 
         vm.prank(OWNER);
         vm.expectRevert(
@@ -1405,7 +1405,7 @@ contract GoldsandTest is Test {
                 ETHWithdrawalFailed.selector, address(rejectEther), address(proxyWithdrawalVault).balance
             )
         );
-        proxyWithdrawalVault.withdrawETHToGoldsand(address(proxyWithdrawalVault).balance);
+        proxyWithdrawalVault.withdrawETHToOperator(address(proxyWithdrawalVault).balance);
     }
 
     function test_operatorWithdrawETHForUser() public {

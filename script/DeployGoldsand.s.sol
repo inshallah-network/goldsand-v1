@@ -21,6 +21,7 @@ contract DeployGoldsand is Script {
     function deploy() public returns (Goldsand) {
         vm.startBroadcast();
 
+        address OPERATOR = vm.envAddress("OPERATOR_ADDRESS");
         address UPGRADER = tx.origin;
 
         // Determine the deposit contract address based on the network
@@ -59,7 +60,7 @@ contract DeployGoldsand is Script {
         console.log("Deployed Goldsand proxy to address", address(proxyGoldsand));
 
         // Give the WithdrawalVault the Goldsand address now that Goldsand is deployed
-        proxyWithdrawalVault.setGoldsandAddress(address(proxyGoldsand));
+        proxyWithdrawalVault.setOperatorAddress(OPERATOR);
         console.log("Set the Goldsand address in the WithdrawalVault");
 
         // Give the UPGRADER ownership of the WithdrawalVault

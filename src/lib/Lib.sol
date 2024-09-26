@@ -76,7 +76,7 @@ library Lib {
      * @param recipient The address to receive the withdrawn ETH.
      * @param _amount The amount of ETH to withdraw.
      */
-    function withdrawETHToGoldsand(address recipient, uint256 _amount) internal {
+    function withdrawETHToOperator(address recipient, uint256 _amount) internal {
         if (_amount == 0) {
             revert ZeroAmount();
         }

@@ -16,6 +16,7 @@ import {Upgrades, Options} from "openzeppelin-foundry-upgrades/src/Upgrades.sol"
 import {Defender, ApprovalProcessResponse} from "openzeppelin-foundry-upgrades/src/Defender.sol";
 
 contract SafeDeployGoldsand is Script {
+    address OPERATOR = vm.envAddress("OPERATOR_ADDRESS");
     address UPGRADER = vm.envAddress("UPGRADER_ADDRESS");
     string internal contractSalt = vm.envString("GOLDSAND_CONTRACT_SALT");
     bytes32 internal salt = keccak256(abi.encodePacked(contractSalt));
@@ -121,7 +122,7 @@ contract SafeDeployGoldsand is Script {
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyGoldsand.withdrawalVaultAddress());
 
         // Give the WithdrawalVault the Goldsand address now that Goldsand is deployed
-        proxyWithdrawalVault.setGoldsandAddress(address(proxyGoldsand));
+        proxyWithdrawalVault.setOperatorAddress(OPERATOR);
         console.log("Set the Goldsand address in the WithdrawalVault");
 
         // Give the UPGRADER ownership of the WithdrawalVault
