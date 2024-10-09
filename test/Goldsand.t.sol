@@ -131,7 +131,7 @@ contract GoldsandTest is Test {
     address immutable OWNER = msg.sender; // 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38
     address immutable EMERGENCY = makeAddr("EMERGENCY"); // 0x4721cB0D6C1215210b1C1979Cb90446366344A7E
     address immutable GOVERNANCE = makeAddr("GOVERNANCE"); // 0xFC538Ae3f25F29Bfc39188Dbe726D46cbf3D00C6
-    address immutable OPERATOR = vm.envAddress("OPERATOR_ADDRESS"); // makeAddr("OPERATOR"); // 0xd1b0c5cBF884fcc27dAF9f733739b39FB0B7DAa1
+    address immutable OPERATOR = makeAddr("OPERATOR"); // 0xd1b0c5cBF884fcc27dAF9f733739b39FB0B7DAa1
     address immutable UPGRADER = makeAddr("UPGRADER"); // 0x8B1D4B40080A998c21c5175fC6f0dd531Fe2Cb5E
     uint256 constant OWNER_STARTING_BALANCE = 0 ether;
     uint256 constant USER1_STARTING_BALANCE = 256 ether;
@@ -191,6 +191,8 @@ contract GoldsandTest is Test {
 
     function setUp() public {
         DeployGoldsand deploy = new DeployGoldsand();
+        deploy.setOperatorMultisigAddress(OPERATOR);
+        deploy.setUpgraderMultisigAddress(UPGRADER);
         goldsand = deploy.run();
         proxyGoldsand = IGoldsand(goldsand);
         proxyWithdrawalVault = IWithdrawalVault(proxyGoldsand.withdrawalVaultAddress());
@@ -773,6 +775,8 @@ contract GoldsandTest is Test {
 
     function test_Deploy() public {
         DeployGoldsand deploy = new DeployGoldsand();
+        deploy.setOperatorMultisigAddress(OPERATOR);
+        deploy.setUpgraderMultisigAddress(UPGRADER);
 
         vm.expectEmit(true, true, true, true);
         emit Initializable.Initialized(2 ** 64 - 1);

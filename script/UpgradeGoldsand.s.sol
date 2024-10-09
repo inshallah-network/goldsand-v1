@@ -8,14 +8,22 @@ import {Goldsand} from "../src/Goldsand.sol";
 import {WithdrawalVault} from "../src/WithdrawalVault.sol";
 
 contract UpgradeGoldsand is Script {
-    address payable proxyGoldsandAddress = payable(address(vm.envAddress("GOLDSAND_PROXY_ADDRESS")));
+    address payable proxyGoldsandAddress = payable(address(0));
 
     function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
         proxyGoldsandAddress = _proxyGoldsandAddress;
     }
 
+    function setProxyGoldsandAddressFromEnv() public {
+        proxyGoldsandAddress = payable(vm.envAddress("GOLDSAND_PROXY_ADDRESS"));
+    }
+
     function run() external {
         vm.startBroadcast();
+
+        if (proxyGoldsandAddress == payable(address(0))) {
+            setProxyGoldsandAddressFromEnv();
+        }
 
         // Deploy the Goldsand implementation contract
         Goldsand newGoldsandImpl = new Goldsand();

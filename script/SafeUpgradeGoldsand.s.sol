@@ -17,14 +17,22 @@ import {
 } from "openzeppelin-foundry-upgrades/src/Defender.sol";
 
 contract SafeUpgradeGoldsand is Script {
-    address payable proxyGoldsandAddress = payable(address(vm.envAddress("GOLDSAND_PROXY_ADDRESS")));
+    address payable proxyGoldsandAddress = payable(address(0));
 
     function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
         proxyGoldsandAddress = _proxyGoldsandAddress;
     }
 
+    function setProxyGoldsandAddressFromEnv() public {
+        proxyGoldsandAddress = payable(vm.envAddress("GOLDSAND_PROXY_ADDRESS"));
+    }
+
     function run() external {
         vm.startBroadcast();
+
+        if (proxyGoldsandAddress == payable(address(0))) {
+            setProxyGoldsandAddressFromEnv();
+        }
 
         bool upgradeGoldsand = true;
         bool upgradeWithdrawalVault = false;
@@ -48,13 +56,11 @@ contract SafeUpgradeGoldsand is Script {
         Options memory withdrawalVaultOptions;
         Options memory goldsandOptions;
         withdrawalVaultOptions.referenceContract = "WithdrawalVaultV1.sol:WithdrawalVault";
-        // TODO change to use same implementation as SafeDeployGoldsand.s.sol
-        withdrawalVaultOptions.defender.salt = vm.envBytes32("OLD_SALT");
+        withdrawalVaultOptions.defender.salt = keccak256(abi.encodePacked(vm.envString("GOLDSAND_CONTRACT_SALT")));
         withdrawalVaultOptions.defender.skipLicenseType = true;
         withdrawalVaultOptions.defender.useDefenderDeploy = true;
         goldsandOptions.referenceContract = "GoldsandV1.sol:Goldsand";
-        // TODO change to use same implementation as SafeDeployGoldsand.s.sol
-        goldsandOptions.defender.salt = vm.envBytes32("NEW_SALT");
+        goldsandOptions.defender.salt = keccak256(abi.encodePacked(vm.envString("GOLDSAND_CONTRACT_SALT")));
         goldsandOptions.defender.skipLicenseType = true;
         goldsandOptions.defender.useDefenderDeploy = true;
 

@@ -16,11 +16,12 @@ import {Upgrades, Options} from "openzeppelin-foundry-upgrades/src/Upgrades.sol"
 import {Defender, ApprovalProcessResponse} from "openzeppelin-foundry-upgrades/src/Defender.sol";
 
 contract SafeDeployGoldsand is Script {
-    address OPERATOR = vm.envAddress("OPERATOR_ADDRESS");
-    address UPGRADER = vm.envAddress("UPGRADER_ADDRESS");
+    address OPERATOR = vm.envAddress("OPERATOR_MULTISIG_ADDRESS");
+    address UPGRADER = vm.envAddress("UPGRADER_MULTISIG_ADDRESS");
+
     string internal contractSalt = vm.envString("GOLDSAND_CONTRACT_SALT");
     bytes32 internal salt = keccak256(abi.encodePacked(contractSalt));
-    
+
     mapping(uint256 => address payable) private networkDepositAddresses;
     mapping(string => uint256) private chainToId;
 
@@ -95,7 +96,7 @@ contract SafeDeployGoldsand is Script {
 
         address payable proxyWithdrawalVaultAddress = payable(
             Upgrades.deployUUPSProxy(
-                "WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, (upgradeApprovalProcess.via)), opts
+                "WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, (UPGRADER)), opts
             )
         );
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyWithdrawalVaultAddress);

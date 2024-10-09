@@ -10,14 +10,22 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/src/Upgrades.sol";
 import {Options} from "openzeppelin-foundry-upgrades/src/Options.sol";
 
 contract ValidateUpgradeGoldsand is Script {
-    address payable proxyGoldsandAddress = payable(address(vm.envAddress("GOLDSAND_PROXY_ADDRESS")));
+    address payable proxyGoldsandAddress = payable(address(0));
 
     function setProxyGoldsandAddress(address payable _proxyGoldsandAddress) public {
         proxyGoldsandAddress = _proxyGoldsandAddress;
     }
 
+    function setProxyGoldsandAddressFromEnv() public {
+        proxyGoldsandAddress = payable(vm.envAddress("GOLDSAND_PROXY_ADDRESS"));
+    }
+
     function run() external {
         vm.startBroadcast();
+
+        if (proxyGoldsandAddress == payable(address(0))) {
+            setProxyGoldsandAddressFromEnv();
+        }
 
         address UPGRADER = tx.origin;
 

@@ -15,11 +15,37 @@ import {Upgrades} from "openzeppelin-foundry-upgrades/src/Upgrades.sol";
 import {console} from "forge-std/console.sol";
 
 contract ValidateDeployGoldsand is Script {
+    address OPERATOR = address(0);
+    address UPGRADER = address(0);
+
+    function setOperatorMultisigAddress(address _operator) public {
+        OPERATOR = _operator;
+    }
+
+    function setUpgraderMultisigAddress(address _upgrader) public {
+        UPGRADER = _upgrader;
+    }
+
+    function setOperatorMultisigAddressFromEnv() public {
+        OPERATOR = vm.envAddress("OPERATOR_MULTISIG_ADDRESS");
+    }
+
+    function setUpgraderMultisigAddressFromEnv() public {
+        UPGRADER = vm.envAddress("UPGRADER_MULTISIG_ADDRESS");
+    }
+
     function deploy() public returns (Goldsand) {
         vm.startBroadcast();
 
-        address OPERATOR = vm.envAddress("OPERATOR_ADDRESS");
-        address UPGRADER = tx.origin;
+        if (OPERATOR == address(0)) {
+            setOperatorMultisigAddressFromEnv();
+        }
+
+        if (UPGRADER == address(0)) {
+            setUpgraderMultisigAddressFromEnv();
+        } else {
+            UPGRADER = tx.origin;
+        }
 
         // Determine the deposit contract address based on the network
         address payable depositContractAddress;
@@ -29,14 +55,16 @@ contract ValidateDeployGoldsand is Script {
             depositContractAddress = HOLESKY_DEPOSIT_CONTRACT_ADDRESS;
         } else if (block.chainid == 31337) {
             DepositContract depositContract = new DepositContract();
-            vm.etch(ANVIL_DEPOSIT_CONTRACT_ADDRESS, address(depositContract).code);
-            depositContractAddress = ANVIL_DEPOSIT_CONTRACT_ADDRESS;
+            depositContractAddress = payable(address(depositContract));
+        } else if (block.chainid == 11155111) {
+            DepositContract depositContract = new DepositContract();
+            depositContractAddress = payable(address(depositContract));
         } else {
             revert("Unknown network");
         }
 
         address payable proxyWithdrawalVaultAddress = payable(
-            Upgrades.deployUUPSProxy("WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, (UPGRADER)))
+            Upgrades.deployUUPSProxy("WithdrawalVault.sol", abi.encodeCall(WithdrawalVault.initialize, (tx.origin)))
         );
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(proxyWithdrawalVaultAddress);
         console.log("Deployed WithdrawalVault proxy to address", address(proxyWithdrawalVault));

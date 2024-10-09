@@ -18,11 +18,37 @@ import {WithdrawalVault} from "./../src/WithdrawalVault.sol";
 import {console} from "forge-std/console.sol";
 
 contract DeployGoldsand is Script {
+    address OPERATOR = address(0);
+    address UPGRADER = address(0);
+
+    function setOperatorMultisigAddress(address _operator) public {
+        OPERATOR = _operator;
+    }
+
+    function setUpgraderMultisigAddress(address _upgrader) public {
+        UPGRADER = _upgrader;
+    }
+
+    function setOperatorMultisigAddressFromEnv() public {
+        OPERATOR = vm.envAddress("OPERATOR_MULTISIG_ADDRESS");
+    }
+
+    function setUpgraderMultisigAddressFromEnv() public {
+        UPGRADER = vm.envAddress("UPGRADER_MULTISIG_ADDRESS");
+    }
+
     function deploy() public returns (Goldsand) {
         vm.startBroadcast();
 
-        address OPERATOR = vm.envAddress("OPERATOR_ADDRESS");
-        address UPGRADER = tx.origin;
+        if (OPERATOR == address(0)) {
+            setOperatorMultisigAddressFromEnv();
+        }
+
+        if (UPGRADER == address(0)) {
+            setUpgraderMultisigAddressFromEnv();
+        } else {
+            UPGRADER = tx.origin;
+        }
 
         // Determine the deposit contract address based on the network
         address payable depositContractAddress;
@@ -32,8 +58,10 @@ contract DeployGoldsand is Script {
             depositContractAddress = HOLESKY_DEPOSIT_CONTRACT_ADDRESS;
         } else if (block.chainid == 31337) {
             DepositContract depositContract = new DepositContract();
-            vm.etch(ANVIL_DEPOSIT_CONTRACT_ADDRESS, address(depositContract).code);
-            depositContractAddress = ANVIL_DEPOSIT_CONTRACT_ADDRESS;
+            depositContractAddress = payable(address(depositContract));
+        } else if (block.chainid == 11155111) {
+            DepositContract depositContract = new DepositContract();
+            depositContractAddress = payable(address(depositContract));
         } else {
             revert("Unknown network");
         }
@@ -43,7 +71,7 @@ contract DeployGoldsand is Script {
 
         // Deploy an ERC1967Proxy with the WithdrawalVault implementation contract and initialize it
         ERC1967Proxy proxyWithdrawalVaultERC1967 =
-            new ERC1967Proxy(address(newWithdrawalVaultImpl), abi.encodeCall(WithdrawalVault.initialize, (UPGRADER)));
+            new ERC1967Proxy(address(newWithdrawalVaultImpl), abi.encodeCall(WithdrawalVault.initialize, (tx.origin)));
         WithdrawalVault proxyWithdrawalVault = WithdrawalVault(payable(address(proxyWithdrawalVaultERC1967)));
         console.log("Deployed WithdrawalVault proxy to address", address(proxyWithdrawalVault));
 
